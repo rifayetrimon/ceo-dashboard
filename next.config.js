@@ -5,12 +5,12 @@ module.exports = {
     reactStrictMode: false,
     eslint: { ignoreDuringBuilds: true },
     output: 'standalone',
-    basePath: isProd ? '/eboss-pro-max' : '',
-    assetPrefix: isProd ? '/eboss-pro-max' : '',
+    basePath: isProd ? '/ceo-dashboard' : '',
+    assetPrefix: isProd ? '/ceo-dashboard' : '',
     images: {
         domains: ['devsec.awfatech.com'],
     },
     env: {
-        NEXT_PUBLIC_BASE_PATH: isProd ? '/eboss-pro-max' : '',
+        NEXT_PUBLIC_BASE_PATH: isProd ? '/ceo-dashboard' : '',
     },
 };
