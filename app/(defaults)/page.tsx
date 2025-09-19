@@ -1,3 +1,4 @@
+import MainDashboard from '@/components/dashboard/main-dashboard';
 import { Metadata } from 'next';
 import React from 'react';
 
@@ -6,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 const Sales = () => {
-    return <div>starter page</div>;
+    return <MainDashboard />;
 };
 
 export default Sales;
