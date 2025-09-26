@@ -1,0 +1,8 @@
+services:
+    app:
+        image: eboss-ai-chat:latest
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.5'
+                    memory: 256M
