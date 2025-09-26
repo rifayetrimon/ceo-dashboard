@@ -26,27 +26,27 @@ interface ZoneBarProps {
 }
 
 export default function ZoneBar({
-    chartTitle = 'Unique Visitors',
+    chartTitle = 'Total Income Breakdown by Zone',
     series = [
         {
-            name: 'Direct',
-            data: [58, 44, 55, 57, 56, 61, 58, 63, 60, 66, 56, 63],
+            name: 'Income',
+            data: [95000, 88000, 92000, 89000, 105000],
         },
         {
-            name: 'Organic',
-            data: [91, 76, 85, 101, 98, 87, 105, 91, 114, 94, 66, 70],
+            name: 'Expenses',
+            data: [110000, 165000, 152000, 158000, 130000],
         },
     ],
-    categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-    colors = ['#5c1ac3', '#ffbb44'],
-    negativeColor = '#e74c3c',
-    height = 360,
+    categories = ['AZZ DELIGHT', 'HILL PARK', 'PUNCAK ALAM', 'SETIA ALAM', 'TRANSIT'],
+    colors = ['#8b5cf6', '#fb923c'],
+    negativeColor = '#ef4444',
+    height = 400,
     showDropdown = true,
     dropdownOptions = ['View', 'Update', 'Delete'],
     onDropdownSelect,
-    columnWidth = '55%',
-    borderRadius = 8,
-    className = 'lg:col-span-2',
+    columnWidth = '60%',
+    borderRadius = 6,
+    className = '',
 }: ZoneBarProps) {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
@@ -56,12 +56,13 @@ export default function ZoneBar({
         setIsMounted(true);
     }, []);
 
-    // Process series data to handle negative values with different colors
+    // Process series to handle negative values with different colors
     const processedSeries = series
         .map((seriesItem, seriesIndex) => {
-            if (seriesIndex === 0) {
+            // Only apply negative/positive split to the first series (PNL)
+            if (seriesIndex === 0 && seriesItem.name.toLowerCase().includes('pnl')) {
                 const positiveData = seriesItem.data.map((val) => (val >= 0 ? val : null));
-                const negativeData = seriesItem.data.map((val) => (val < 0 ? val : null));
+                const negativeData = seriesItem.data.map((val) => (val < 0 ? Math.abs(val) : null));
 
                 return [
                     {
@@ -78,140 +79,143 @@ export default function ZoneBar({
         })
         .flat();
 
-    const processedColors = [colors[0], negativeColor, ...colors.slice(1)];
+    // Adjust colors for processed series
+    const processedColors = series[0]?.name.toLowerCase().includes('pnl') ? [colors[0], negativeColor, ...colors.slice(1)] : colors;
 
-    // Calculate min and max values for y-axis
-    const allValues = series.flatMap((s) => s.data);
-    const maxValue = Math.max(...allValues);
-    const minValue = Math.min(...allValues);
-
-    // Set y-axis range with 0 as the center
-    const yAxisMax = Math.max(maxValue, Math.abs(minValue));
-
-    // Define custom tick values
-    const tickValues = [-1000, 0, 1000, 100000, 1000000];
-
-    // Filter tick values to only include those within our range
-    const filteredTickValues = tickValues.filter((val) => Math.abs(val) <= yAxisMax || val === 0);
-
-    // If we don't have enough ticks, add some more
-    if (filteredTickValues.length < 3) {
-        const step = yAxisMax / 4;
-        for (let i = 1; i <= 4; i++) {
-            filteredTickValues.push(-step * i);
-            filteredTickValues.push(step * i);
-        }
-        filteredTickValues.sort((a, b) => a - b);
-    }
-
-    const uniqueVisitorSeries: any = {
-        series: processedSeries,
-        options: {
-            chart: {
-                height: height,
-                type: 'bar',
-                fontFamily: 'Nunito, sans-serif',
-                toolbar: {
-                    show: false,
-                },
+    const chartOptions: any = {
+        chart: {
+            height: height,
+            type: 'bar',
+            fontFamily: 'Inter, sans-serif',
+            toolbar: { show: false },
+            background: 'transparent',
+        },
+        dataLabels: { enabled: false },
+        stroke: {
+            width: 1,
+            colors: ['transparent'],
+        },
+        colors: processedColors,
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: columnWidth,
+                borderRadius: borderRadius,
+                borderRadiusApplication: 'end',
+                dataLabels: { position: 'top' },
             },
-            dataLabels: {
-                enabled: false,
+        },
+        legend: {
+            show: true,
+            position: 'bottom',
+            horizontalAlign: 'center',
+            fontSize: '14px',
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 400,
+            labels: {
+                colors: isDark ? '#bfc9d4' : '#374151',
             },
-            stroke: {
-                width: 2,
-                colors: ['transparent'],
+            markers: {
+                width: 12,
+                height: 12,
+                radius: 2,
             },
-            colors: processedColors,
-            dropShadow: {
-                enabled: true,
-                blur: 3,
-                color: '#515365',
-                opacity: 0.4,
+            itemMargin: {
+                horizontal: 16,
+                vertical: 8,
             },
-            plotOptions: {
-                bar: {
-                    horizontal: false,
-                    columnWidth: columnWidth,
-                    borderRadius: borderRadius,
-                    borderRadiusApplication: 'end',
-                },
+        },
+        grid: {
+            show: true,
+            borderColor: isDark ? '#1f2937' : '#e5e7eb',
+            strokeDashArray: 0,
+            position: 'back',
+            xaxis: { lines: { show: false } },
+            yaxis: { lines: { show: true } },
+            padding: {
+                top: 20,
+                right: 20,
+                bottom: 20,
+                left: 20,
             },
-            annotations: {
-                yaxis: [
-                    {
-                        y: 0,
-                        borderColor: isDark ? '#3b3f5c' : '#e0e6ed',
-                        strokeDashArray: 2,
-                    },
-                ],
+        },
+        xaxis: {
+            categories: categories,
+            axisBorder: {
+                show: true,
+                color: isDark ? '#374151' : '#e5e7eb',
             },
-            legend: {
-                position: 'bottom',
-                horizontalAlign: 'center',
-                fontSize: '14px',
-                itemMargin: {
-                    horizontal: 8,
-                    vertical: 8,
-                },
-            },
-            grid: {
-                borderColor: isDark ? '#191e3a' : '#e0e6ed',
-                padding: {
-                    left: 20,
-                    right: 20,
-                },
-            },
-            xaxis: {
-                categories: categories,
-                axisBorder: {
-                    show: true,
-                    color: isDark ? '#3b3f5c' : '#e0e6ed',
-                },
-            },
-            yaxis: {
-                opposite: isRtl ? true : false,
-                labels: {
-                    offsetX: isRtl ? -10 : 0,
-                    formatter: function (val: number) {
-                        if (val === -1000) return '-1k';
-                        if (val === 0) return '0';
-                        if (val === 1000) return '1k';
-                        if (val === 100000) return '100k';
-                        if (val === 1000000) return '1M';
-
-                        // For other values, format them appropriately
-                        if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
-                        if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
-                        if (val <= -1000000) return (val / 1000000).toFixed(1) + 'M';
-                        if (val <= -1000) return (val / 1000).toFixed(1) + 'k';
-
-                        return val.toString();
-                    },
-                },
-                min: -yAxisMax,
-                max: yAxisMax,
-                forceNiceScale: false,
-                tickAmount: filteredTickValues.length,
-            },
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shade: isDark ? 'dark' : 'light',
-                    type: 'vertical',
-                    shadeIntensity: 0.3,
-                    inverseColors: false,
-                    opacityFrom: 1,
-                    opacityTo: 0.8,
-                    stops: [0, 100],
-                },
-            },
-            tooltip: {
-                marker: {
-                    show: true,
+            axisTicks: { show: false },
+            labels: {
+                style: {
+                    colors: isDark ? '#9ca3af' : '#374151',
+                    fontSize: '12px',
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 500,
                 },
             },
         },
+        yaxis: {
+            opposite: isRtl ? true : false,
+            labels: {
+                style: {
+                    colors: isDark ? '#9ca3af' : '#6b7280',
+                    fontSize: '12px',
+                    fontFamily: 'Inter, sans-serif',
+                },
+                formatter: function (val: number) {
+                    if (val >= 1000000) return (val / 1000000).toFixed(0) + 'M';
+                    if (val >= 1000) return (val / 1000).toFixed(0) + 'k';
+                    if (val === 0) return '0';
+                    if (val <= -1000000) return (val / 1000000).toFixed(0) + 'M';
+                    if (val <= -1000) return (val / 1000).toFixed(0) + 'k';
+                    return val.toString();
+                },
+                offsetX: isRtl ? -10 : 0,
+            },
+            min: 0,
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shade: isDark ? 'dark' : 'light',
+                type: 'vertical',
+                shadeIntensity: 0.1,
+                gradientToColors: undefined,
+                inverseColors: false,
+                opacityFrom: 0.9,
+                opacityTo: 0.7,
+                stops: [0, 100],
+            },
+        },
+        tooltip: {
+            enabled: true,
+            theme: isDark ? 'dark' : 'light',
+            style: {
+                fontSize: '12px',
+                fontFamily: 'Inter, sans-serif',
+            },
+            y: {
+                formatter: function (val: number) {
+                    if (val >= 1000000) return 'RM ' + (val / 1000000).toFixed(1) + 'M';
+                    if (val >= 1000) return 'RM ' + (val / 1000).toFixed(0) + 'k';
+                    return 'RM ' + val.toString();
+                },
+            },
+        },
+        responsive: [
+            {
+                breakpoint: 768,
+                options: {
+                    plotOptions: {
+                        bar: { columnWidth: '70%' },
+                    },
+                    legend: {
+                        position: 'bottom',
+                    },
+                },
+            },
+        ],
     };
 
     const handleDropdownSelect = (option: string) => {
@@ -222,6 +226,7 @@ export default function ZoneBar({
 
     return (
         <div className={`panel h-full p-0 ${className}`}>
+            {/* Header */}
             <div className="mb-5 flex items-start justify-between border-b border-white-light p-5 dark:border-[#1b2e4b] dark:text-white-light">
                 <h5 className="text-lg font-semibold">{chartTitle}</h5>
                 {showDropdown && (
@@ -246,7 +251,16 @@ export default function ZoneBar({
                 )}
             </div>
 
-            {isMounted && <ReactApexChart options={uniqueVisitorSeries.options} series={uniqueVisitorSeries.series} type="bar" height={height} width={'100%'} />}
+            {/* Chart */}
+            <div className="px-5 pb-5">
+                {isMounted ? (
+                    <ReactApexChart options={chartOptions} series={processedSeries} type="bar" height={height} width="100%" />
+                ) : (
+                    <div className="grid place-content-center" style={{ height: height }}>
+                        <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-black !border-l-transparent dark:border-white"></span>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

@@ -29,6 +29,9 @@ import AreaChart from '../widgets/Area-chart';
 import SummaryBar from '../widgets/SummaryBar';
 import GrossNetProfit from '../widgets/Gross-Net-profit';
 import ZoneBar from '../widgets/Zone-bar';
+import { Table } from '@mantine/core';
+import TableData from '../widgets/TableData';
+import OutstandingAmountChart from '../widgets/Amount-zone-chart';
 
 export default function MainDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
@@ -754,6 +757,14 @@ export default function MainDashboard() {
                             className="xl:col-span-3"
                             onDropdownSelect={(option) => console.log(option)}
                         />
+                    </div>
+                    {/* Row 6 */}
+                    <div className="mb-6 grid gap-6 xl: grid-cols-1">
+                        <TableData />
+                    </div>
+                    {/* Row 7 */}
+                    <div className="mb-6 grid gap-6 xl:grid-cols-1">
+                        <OutstandingAmountChart />
                     </div>
                 </div>
             </div>
