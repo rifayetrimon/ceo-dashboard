@@ -616,7 +616,7 @@ export default function MainDashboard() {
                                     data: [1400000, 1700000, 1900000, 2100000, 2000000, 2300000, 2400000, 2200000, 2600000, 2700000, 3000000, 3200000],
                                 },
                             ]}
-                            labels={['Jan-Apr', 'May-Aug', 'Sep-Dec', 'Jan-Apr', 'May-Aug', 'Sep-Dec', 'Jan-Apr', 'May-Aug', 'Sep-Dec', 'Jan-Aug', 'May-Aug', 'Sep-Dec']}
+                            labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
                             height={325}
                             yAxisFormatter={(value: number) => value / 1000000 + 'M'}
                         />
