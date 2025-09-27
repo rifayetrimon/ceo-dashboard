@@ -195,83 +195,6 @@ export default function MainDashboard() {
         },
     };
 
-    // Sales by Category
-    // const salesByCategory: any = {
-    //     series: [985, 737, 270, 450, 620],
-    //     options: {
-    //         chart: {
-    //             type: 'donut',
-    //             height: 350,
-    //             fontFamily: 'Nunito, sans-serif',
-    //         },
-    //         labels: ['Transit', 'Azz Delight', 'Hill Park', 'Setia Alam', 'Puncak Alam'],
-    //         dataLabels: {
-    //             enabled: false,
-    //         },
-    //         stroke: {
-    //             show: true,
-    //             width: 2,
-    //             colors: [isDark ? '#0e1726' : '#fff'],
-    //         },
-    //         colors: isDark ? ['#5c1ac3', '#e2a03f', '#e7515a', '#2196f3', '#4caf50'] : ['#e2a03f', '#5c1ac3', '#e7515a', '#2196f3', '#4caf50'],
-    //         legend: {
-    //             position: 'bottom',
-    //             horizontalAlign: 'center',
-    //             fontSize: '13px',
-    //             fontWeight: 500,
-    //             offsetY: 10,
-    //             markers: {
-    //                 width: 8,
-    //                 height: 8,
-    //                 radius: 2,
-    //             },
-    //         },
-    //         plotOptions: {
-    //             pie: {
-    //                 donut: {
-    //                     size: '80%',
-    //                     labels: {
-    //                         show: true,
-    //                         name: {
-    //                             show: true,
-    //                             fontSize: '20px',
-    //                             offsetY: -5,
-    //                         },
-    //                         value: {
-    //                             show: true,
-    //                             fontSize: '22px',
-    //                             color: isDark ? '#bfc9d4' : '#111827',
-    //                             offsetY: 10,
-    //                             formatter: (val: any) => val,
-    //                         },
-    //                         total: {
-    //                             show: true,
-    //                             label: 'Category', // This shows "Category" as the label
-    //                             fontSize: '22px',
-    //                             color: isDark ? '#bfc9d4' : '#111827',
-    //                             formatter: (w: any) => {
-    //                                 return ''; // Return empty string so only the label shows
-    //                             },
-    //                         },
-    //                     },
-    //                 },
-    //             },
-    //         },
-    //         states: {
-    //             hover: {
-    //                 filter: {
-    //                     type: 'none',
-    //                 },
-    //             },
-    //             active: {
-    //                 filter: {
-    //                     type: 'none',
-    //                 },
-    //             },
-    //         },
-    //     },
-    // };
-
     //Daily Sales
     const dailySales: any = {
         series: [
@@ -410,7 +333,7 @@ export default function MainDashboard() {
 
     return (
         <>
-            <div>
+            <div className="px-4 sm:px-6 lg:px-8">
                 <ul className="flex space-x-2 rtl:space-x-reverse">
                     <li>
                         <Link href="/" className="text-primary hover:underline">
@@ -423,8 +346,8 @@ export default function MainDashboard() {
                 </ul>
 
                 <div className="pt-5">
-                    {/* 1st row  */}
-                    <div className="mb-6 grid grid-cols-1 gap-6 text-white sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                    {/* 1st row - KPI Cards with improved tablet responsiveness */}
+                    <div className="mb-6 grid grid-cols-1 gap-4 text-white sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                         {/* user visit */}
                         <div className="panel bg-gradient-to-r from-cyan-500 to-cyan-400">
                             <div className="flex justify-between">
@@ -553,8 +476,8 @@ export default function MainDashboard() {
                             </div>
                         </div>
 
-                        {/* Bounce Rate */}
-                        <div className="panel bg-gradient-to-b from-[#EF4649] to-[#F9797B]">
+                        {/* Total Staff */}
+                        <div className="panel bg-gradient-to-b from-[#EF4649] to-[#F9797B] md:col-span-3 lg:col-span-1">
                             <div className="flex justify-between">
                                 <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Total Staff</div>
                                 <div className="dropdown">
@@ -586,59 +509,46 @@ export default function MainDashboard() {
                         </div>
                     </div>
 
-                    {/* Row 2 */}
-                    <div className="mb-6 grid gap-6 xl:grid-cols-3">
-                        {/* Income Chart */}
-                        {/* <div className="panel h-full xl:col-span-2">
-                            <h5 className="mb-5 text-lg font-semibold dark:text-white-light">Income</h5>
-                            <div className="rounded-lg bg-white dark:bg-black">
-                                {isMounted ? (
-                                    <ReactApexChart series={revenueChart.series} options={revenueChart.options} type="area" height={325} width="100%" />
-                                ) : (
-                                    <div className="grid min-h-[325px] place-content-center">
-                                        <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-black !border-l-transparent dark:border-white"></span>
-                                    </div>
-                                )}
-                            </div>
-                        </div> */}
+                    {/* Row 2 - Charts with better tablet layout */}
+                    <div className="mb-6 grid gap-6 lg:grid-cols-3">
+                        <div className="lg:col-span-2">
+                            <AreaChart
+                                title="Income"
+                                subtitle="Total Income"
+                                subtitleValue="RM 6.1M"
+                                series={[
+                                    {
+                                        name: 'Income',
+                                        data: [1600000, 1800000, 2000000, 2200000, 2100000, 2500000, 2600000, 2400000, 2700000, 2800000, 3000000, 3100000],
+                                    },
+                                    {
+                                        name: 'Expenses',
+                                        data: [1400000, 1700000, 1900000, 2100000, 2000000, 2300000, 2400000, 2200000, 2600000, 2700000, 3000000, 3200000],
+                                    },
+                                ]}
+                                labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
+                                height={325}
+                                yAxisFormatter={(value: number) => value / 1000000 + 'M'}
+                            />
+                        </div>
 
-                        <AreaChart
-                            title="Income"
-                            subtitle="Total Income"
-                            subtitleValue="RM 6.1M"
-                            series={[
-                                {
-                                    name: 'Income',
-                                    data: [1600000, 1800000, 2000000, 2200000, 2100000, 2500000, 2600000, 2400000, 2700000, 2800000, 3000000, 3100000],
-                                },
-                                {
-                                    name: 'Expenses',
-                                    data: [1400000, 1700000, 1900000, 2100000, 2000000, 2300000, 2400000, 2200000, 2600000, 2700000, 3000000, 3200000],
-                                },
-                            ]}
-                            labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
-                            height={325}
-                            yAxisFormatter={(value: number) => value / 1000000 + 'M'}
-                        />
-
-                        {/* ✅ Sales by Category */}
-                        <PieChart
-                            title="Total Income Breakdown By Category(%)"
-                            series={[985, 737, 270, 450, 620]}
-                            labels={['Transit', 'Azz Delight', 'Hill Park', 'Setia Alam', 'Puncak Alam']}
-                            height={340}
-                            showDropdown={true}
-                            dropdownOptions={['View Report', 'Export Data', 'Share Chart']}
-                            onDropdownSelect={(option) => {
-                                console.log('Selected:', option);
-                                // Handle dropdown selection
-                            }}
-                        />
+                        <div className="lg:col-span-1">
+                            <PieChart
+                                title="Total Income Breakdown By Category(%)"
+                                series={[985, 737, 270, 450, 620]}
+                                labels={['Transit', 'Azz Delight', 'Hill Park', 'Setia Alam', 'Puncak Alam']}
+                                height={340}
+                                showDropdown={true}
+                                dropdownOptions={['View Report', 'Export Data', 'Share Chart']}
+                                onDropdownSelect={(option) => {
+                                    console.log('Selected:', option);
+                                }}
+                            />
+                        </div>
                     </div>
 
-                    {/* Row 3 */}
-                    <div className="mb-6 grid gap-6 xl:grid-cols-3">
-                        {/* pie chart 1 */}
+                    {/* Row 3 - Three pie charts with tablet responsiveness */}
+                    <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         <BasicPieChart
                             chartTitle="Financial Component Breakdown"
                             series={[44, 55, 13, 43]}
@@ -649,10 +559,11 @@ export default function MainDashboard() {
                                 console.log('BasicPieChart option selected:', option);
                             }}
                         />
+
                         <BasicPieChart
                             chartTitle="Revenue Distribution By Category"
                             series={[44, 55, 13, 43]}
-                            labels={['Actovities', 'School Fee', 'School Merchandise', 'School Activities']}
+                            labels={['Activities', 'School Fee', 'School Merchandise', 'School Activities']}
                             colors={['#4361ee', '#805dca', '#00ab55', '#e7515a']}
                             height={340}
                             onDropdownSelect={(option) => {
@@ -660,25 +571,24 @@ export default function MainDashboard() {
                             }}
                         />
 
-                        {/* ✅ Expenses by Category */}
-                        <PieChart
-                            title="Total Expenses Breakdown By Category(%)"
-                            series={[985, 737, 270, 450, 620]}
-                            labels={['Transit', 'Azz Delight', 'Hill Park', 'Setia Alam', 'Puncak Alam']}
-                            height={340}
-                            showDropdown={true}
-                            dropdownOptions={['View Report', 'Export Data', 'Share Chart']}
-                            onDropdownSelect={(option) => {
-                                console.log('Selected:', option);
-                                // Handle dropdown selection
-                            }}
-                        />
+                        <div className="md:col-span-2 lg:col-span-1">
+                            <PieChart
+                                title="Total Expenses Breakdown By Category(%)"
+                                series={[985, 737, 270, 450, 620]}
+                                labels={['Transit', 'Azz Delight', 'Hill Park', 'Setia Alam', 'Puncak Alam']}
+                                height={340}
+                                showDropdown={true}
+                                dropdownOptions={['View Report', 'Export Data', 'Share Chart']}
+                                onDropdownSelect={(option) => {
+                                    console.log('Selected:', option);
+                                }}
+                            />
+                        </div>
                     </div>
 
-                    {/* Row 4 */}
-                    <div className="mb-6 grid gap-6 xl:grid-cols-3">
-                        {/* Summary - Takes 2/3 of the row (2 columns) */}
-                        <div className="xl:col-span-2">
+                    {/* Row 4 - Summary and Gross Net Profit */}
+                    <div className="mb-6 grid gap-6 lg:grid-cols-3">
+                        <div className="lg:col-span-2">
                             <SummaryBar
                                 title="Financial Summary"
                                 items={[
@@ -719,8 +629,7 @@ export default function MainDashboard() {
                             />
                         </div>
 
-                        {/* Gross Net Profit - Takes 1/3 of the row (1 column) */}
-                        <div className="xl:col-span-1">
+                        <div className="lg:col-span-1">
                             <GrossNetProfit
                                 title="Gross Net Profit"
                                 subtitle="Go to columns for details."
@@ -742,8 +651,8 @@ export default function MainDashboard() {
                         </div>
                     </div>
 
-                    {/* Row 5 */}
-                    <div className="mb-6 grid gap-6 xl:grid-cols-3">
+                    {/* Row 5 - Zone Bar Chart */}
+                    <div className="mb-6">
                         <ZoneBar
                             chartTitle="Total Income Breakdown By Zone"
                             series={[
@@ -754,16 +663,17 @@ export default function MainDashboard() {
                             categories={['Azz Delight', 'Hill Dark', 'Puncak Alam', 'Setia Alam', 'Transit']}
                             colors={['#6225C7', '#FEBD4A', '#21C72F']}
                             negativeColor="#FF4757"
-                            className="xl:col-span-3"
                             onDropdownSelect={(option) => console.log(option)}
                         />
                     </div>
-                    {/* Row 6 */}
-                    <div className="mb-6 grid gap-6 xl: grid-cols-1">
+
+                    {/* Row 6 - Table Data */}
+                    <div className="mb-6">
                         <TableData />
                     </div>
-                    {/* Row 7 */}
-                    <div className="mb-6 grid gap-6 xl:grid-cols-1">
+
+                    {/* Row 7 - Outstanding Amount Chart */}
+                    <div className="mb-6">
                         <OutstandingAmountChart />
                     </div>
                 </div>
