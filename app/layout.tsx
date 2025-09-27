@@ -4,6 +4,7 @@ import '../styles/tailwind.css';
 import { Metadata } from 'next';
 import { Nunito } from 'next/font/google';
 import { MantineProvider } from '@mantine/core';
+import AppCodeGuard from '@/components/guards/AppcodeGurad';
 
 export const metadata: Metadata = {
     title: {
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html lang="en">
             <body className={nunito.variable}>
                 <MantineProvider>
-                    <ProviderComponent>{children}</ProviderComponent>
+                    <ProviderComponent>
+                        <AppCodeGuard>{children}</AppCodeGuard>
+                    </ProviderComponent>
                 </MantineProvider>
             </body>
         </html>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 type Props = {
     children: React.ReactNode;
@@ -9,18 +9,31 @@ type Props = {
 
 const AppCodeGuard = ({ children }: Props) => {
     const router = useRouter();
-    const [isAllowed, setIsAllowed] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() => {
-        const token = localStorage.getItem('x-encrypted-key');
-        if (!token) {
-            router.replace('/auth/appcode'); // redirect if no token
-        } else {
-            setIsAllowed(true); // allow rendering
-        }
-    }, [router]);
+        if (typeof window === 'undefined') return;
 
-    if (!isAllowed) return null;
+        const token = localStorage.getItem('x-encrypted-key');
+
+        // If NO token → only allow /auth/appcode
+        if (!token && pathname !== '/auth/appcode') {
+            router.replace('/auth/appcode');
+            return;
+        }
+
+        // ✅ Allow /auth/appcode even if token exists
+    }, [router, pathname]);
+
+    // Prevent render while redirecting
+    if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('x-encrypted-key');
+
+        // No token, not on /auth/appcode → block rendering
+        if (!token && pathname !== '/auth/appcode') {
+            return null;
+        }
+    }
 
     return <>{children}</>;
 };
