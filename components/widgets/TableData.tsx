@@ -6,6 +6,7 @@ import Dropdown from '@/components/dropdown';
 import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 
 const TableData = () => {
+    const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
 
     // Dropdown options and handler
@@ -108,26 +109,26 @@ const TableData = () => {
             <div className="overflow-x-auto">
                 <table className="w-full">
                     {/* Table Header */}
-                    <thead className="bg-blue-50">
+                    <thead className={`${isDark ? 'bg-gray-800' : 'bg-blue-50'}`}>
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Zone</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">(Month/Outstanding Amount)</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">January</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">February</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">March</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">April</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">May</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">June</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">July</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">Total</th>
+                            <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>Zone</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>(Month/Outstanding Amount)</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>January</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>February</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>March</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>April</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>May</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>June</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>July</th>
+                            <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-700'}`}>Total</th>
                         </tr>
                     </thead>
 
                     {/* Table Body */}
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className={`${isDark ? 'bg-gray-900' : 'bg-white'} ${isDark ? 'divide-gray-700' : 'divide-gray-200'} divide-y`}>
                         {demoData.map((row, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
+                            <tr key={index} className={`${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50'}`}>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'} flex items-center`}>
                                     {row.color && (
                                         <span
                                             className={`inline-block w-2 h-2 rounded-full mr-3 ${
@@ -145,30 +146,30 @@ const TableData = () => {
                                     )}
                                     {row.zone}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center"></td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{row.january}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{row.february}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{row.march}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{row.april}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{row.may}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{row.june}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{row.july}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">{row.total}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}></td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{row.january}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{row.february}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{row.march}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{row.april}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{row.may}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{row.june}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{row.july}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.total}</td>
                             </tr>
                         ))}
 
                         {/* Total Row */}
-                        <tr className="bg-blue-50 font-medium">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">Total</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center"></td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{totals.january}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{totals.february}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{totals.march}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{totals.april}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{totals.may}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{totals.june}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{totals.july}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-center">{totals.total}</td>
+                        <tr className={`${isDark ? 'bg-gray-800' : 'bg-blue-50'} font-medium`}>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Total</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}></td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{totals.january}</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{totals.february}</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{totals.march}</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{totals.april}</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{totals.may}</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{totals.june}</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>{totals.july}</td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-bold text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>{totals.total}</td>
                         </tr>
                     </tbody>
                 </table>

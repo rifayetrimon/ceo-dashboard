@@ -1,186 +1,138 @@
 'use client';
-import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import Dropdown from '../dropdown';
-import IconHorizontalDots from '../icon/icon-horizontal-dots';
+
+import React, { useEffect, useState } from 'react';
+import ReactApexChart from 'react-apexcharts';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
+import Dropdown from '@/components/dropdown';
+import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 
 const OutstandingAmountChart = () => {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
+    const [isMounted, setIsMounted] = useState(false);
 
-    // Dropdown options and handler
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const dropdownOptions = ['View Report', 'Export Data', 'Edit Chart'];
 
-    const handleDropdownSelect = (option: string) => {
-        console.log(`Selected option: ${option}`);
-        // Add your dropdown logic here
-    };
+    const labels = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
 
-    // Demo data based on your image - replace with API data later
-    const chartData = [
+    const series = [
         {
-            month: 'JANUARY',
-            'HILL PARK': 600,
-            'SETIA ALAM': 1100,
-            'PUNCAK ALAM': 400,
-            TRANSIT: 139,
+            name: 'HILL PARK',
+            data: [600, 13173, 200, 1560, 3050, 4810, 10335, 0, 0, 0, 0, 0],
         },
         {
-            month: 'FEBRUARY',
-            'HILL PARK': 13173,
-            'SETIA ALAM': 6105,
-            'PUNCAK ALAM': 6783,
-            TRANSIT: 0,
+            name: 'SETIA ALAM',
+            data: [1100, 6105, 1775, 2620, 2470, 2700, 13528, 0, 0, 0, 0, 0],
         },
         {
-            month: 'MARCH',
-            'HILL PARK': 200,
-            'SETIA ALAM': 1775,
-            'PUNCAK ALAM': 395,
-            TRANSIT: 0,
+            name: 'PUNCAK ALAM',
+            data: [400, 6783, 395, 0, 650, 8680, 11507, 0, 0, 0, 0, 0],
         },
         {
-            month: 'APRIL',
-            'HILL PARK': 1560,
-            'SETIA ALAM': 2620,
-            'PUNCAK ALAM': 0,
-            TRANSIT: 0,
-        },
-        {
-            month: 'MAY',
-            'HILL PARK': 3050,
-            'SETIA ALAM': 2470,
-            'PUNCAK ALAM': 650,
-            TRANSIT: 183,
-        },
-        {
-            month: 'JUNE',
-            'HILL PARK': 4810,
-            'SETIA ALAM': 2700,
-            'PUNCAK ALAM': 8680,
-            TRANSIT: 1527,
-        },
-        {
-            month: 'JULY',
-            'HILL PARK': 10335,
-            'SETIA ALAM': 13528,
-            'PUNCAK ALAM': 11507,
-            TRANSIT: 3645,
-        },
-        {
-            month: 'AUGUST',
-            'HILL PARK': 0,
-            'SETIA ALAM': 0,
-            'PUNCAK ALAM': 0,
-            TRANSIT: 0,
-        },
-        {
-            month: 'SEPTEMBER',
-            'HILL PARK': 0,
-            'SETIA ALAM': 0,
-            'PUNCAK ALAM': 0,
-            TRANSIT: 0,
-        },
-        {
-            month: 'OCTOBER',
-            'HILL PARK': 0,
-            'SETIA ALAM': 0,
-            'PUNCAK ALAM': 0,
-            TRANSIT: 0,
-        },
-        {
-            month: 'NOVEMBER',
-            'HILL PARK': 0,
-            'SETIA ALAM': 0,
-            'PUNCAK ALAM': 0,
-            TRANSIT: 0,
-        },
-        {
-            month: 'DECEMBER',
-            'HILL PARK': 0,
-            'SETIA ALAM': 0,
-            'PUNCAK ALAM': 0,
-            TRANSIT: 0,
+            name: 'TRANSIT',
+            data: [139, 0, 0, 0, 183, 1527, 3645, 0, 0, 0, 0, 0],
         },
     ];
 
-    // Custom Y-axis tick formatter
-    const formatYAxisTick = (value: number) => {
-        if (value >= 1000) {
-            return `${value / 1000}K`;
-        }
-        return value.toString();
-    };
+    const colors = ['#3b82f6', '#ef4444', '#f97316', '#10b981'];
 
-    // Custom tooltip formatter similar to ZoneBar
-    const formatTooltipValue = (value: number, name: string) => {
-        if (value >= 1000000) {
-            return [`RM ${(value / 1000000).toFixed(1)}M`, name];
-        }
-        if (value >= 1000) {
-            return [`RM ${(value / 1000).toFixed(0)}K`, name];
-        }
-        return [`RM ${value}`, name];
+    const chartOptions: any = {
+        chart: {
+            type: 'line',
+            height: 350,
+            fontFamily: 'Nunito, sans-serif',
+            toolbar: { show: false },
+            zoom: { enabled: false },
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2,
+        },
+        markers: {
+            size: 4,
+            strokeWidth: 2,
+            hover: { size: 6 },
+        },
+        colors,
+        xaxis: {
+            categories: labels,
+            labels: {
+                offsetX: isRtl ? 2 : 0,
+                offsetY: 5,
+                style: {
+                    colors: isDark ? '#ffffff' : '#374151',
+                    fontSize: '12px',
+                    cssClass: 'apexcharts-xaxis-title',
+                },
+            },
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+        },
+        yaxis: {
+            min: 0,
+            max: 15000,
+            tickAmount: 4,
+            labels: {
+                formatter: (val: number) => (val >= 1000 ? `${val / 1000}K` : val.toString()),
+                offsetX: isRtl ? -30 : -10,
+                offsetY: 0,
+                style: {
+                    colors: isDark ? '#ffffff' : '#374151',
+                    fontSize: '12px',
+                    cssClass: 'apexcharts-yaxis-title',
+                },
+            },
+            opposite: isRtl,
+        },
+        grid: {
+            borderColor: isDark ? '#191E3A' : '#E0E6ED',
+            strokeDashArray: 5,
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'right',
+            fontSize: '16px',
+            labels: {
+                colors: isDark ? '#ffffff' : '#374151',
+            },
+            markers: {
+                width: 10,
+                height: 10,
+                offsetX: -2,
+            },
+            itemMargin: {
+                horizontal: 10,
+                vertical: 5,
+            },
+        },
+        tooltip: {
+            theme: isDark ? 'dark' : 'light',
+            y: {
+                formatter: (val: number) => {
+                    if (val >= 1_000_000) return `RM ${(val / 1_000_000).toFixed(1)}M`;
+                    if (val >= 1000) return `RM ${(val / 1000).toFixed(0)}K`;
+                    return `RM ${val}`;
+                },
+            },
+        },
     };
-
-    // Custom tooltip component
-    const CustomTooltip = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-white dark:bg-[#1b2e4b] p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600">
-                    <p className="text-sm font-medium text-gray-800 dark:text-white mb-2">{label}</p>
-                    {payload.map((entry: any, index: number) => (
-                        <div key={index} className="flex items-center space-x-2 text-sm">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
-                            <span className="text-gray-600 dark:text-gray-300">{entry.dataKey}:</span>
-                            <span className="font-semibold text-gray-800 dark:text-white">{formatTooltipValue(entry.value, '')[0]}</span>
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-        return null;
-    };
-
-    // Custom legend component
-    const CustomLegend = () => (
-        <div className="flex justify-end items-center space-x-6 mb-4 text-sm">
-            <div className="flex items-center space-x-1">
-                <div className="w-3 h-0.5 bg-green-500"></div>
-                <span className="text-gray-700 dark:text-gray-300">TRANSIT</span>
-            </div>
-            <div className="flex items-center space-x-1">
-                <div className="w-3 h-0.5 bg-red-500"></div>
-                <span className="text-gray-700 dark:text-gray-300">SETIA ALAM</span>
-            </div>
-            <div className="flex items-center space-x-1">
-                <div className="w-3 h-0.5 bg-blue-500"></div>
-                <span className="text-gray-700 dark:text-gray-300">HILL PARK</span>
-            </div>
-            <div className="flex items-center space-x-1">
-                <div className="w-3 h-0.5 bg-orange-500"></div>
-                <span className="text-gray-700 dark:text-gray-300">PUNCAK ALAM</span>
-            </div>
-        </div>
-    );
 
     return (
         <div className="panel h-full">
+            {/* Header */}
             <div className="mb-5 flex items-center justify-between dark:text-white-light">
                 <h5 className="text-lg font-semibold">Outstanding Amount by Zone</h5>
                 <div className="dropdown">
-                    <Dropdown
-                        offset={[0, 5]}
-                        placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                        btnClassName="hover:text-primary"
-                        button={<IconHorizontalDots className="text-black/70 hover:!text-primary dark:text-white/70" />}
-                    >
+                    <Dropdown offset={[0, 5]} placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`} button={<IconHorizontalDots className="text-black/70 hover:!text-primary dark:text-white/70" />}>
                         <ul>
                             {dropdownOptions.map((option, index) => (
                                 <li key={index}>
-                                    <button type="button" onClick={() => handleDropdownSelect(option)}>
+                                    <button type="button" onClick={() => console.log(option)}>
                                         {option}
                                     </button>
                                 </li>
@@ -190,67 +142,17 @@ const OutstandingAmountChart = () => {
                 </div>
             </div>
 
-            <CustomLegend />
-
-            <div className="h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                        data={chartData}
-                        margin={{
-                            top: 5,
-                            right: 30,
-                            left: 20,
-                            bottom: 5,
-                        }}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} />
-                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: isDark ? '#9ca3af' : '#666' }} />
-                        <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 12, fill: isDark ? '#9ca3af' : '#666' }}
-                            tickFormatter={formatYAxisTick}
-                            domain={[-500, 15000]}
-                            ticks={[0, 5000, 10000, 15000]}
-                        />
-
-                        {/* Add the custom tooltip */}
-                        <Tooltip content={<CustomTooltip />} />
-
-                        <Line
-                            type="monotone"
-                            dataKey="TRANSIT"
-                            stroke="#10b981"
-                            strokeWidth={2}
-                            dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2, fill: '#10b981' }}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="SETIA ALAM"
-                            stroke="#ef4444"
-                            strokeWidth={2}
-                            dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: '#ef4444', strokeWidth: 2, fill: '#ef4444' }}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="HILL PARK"
-                            stroke="#3b82f6"
-                            strokeWidth={2}
-                            dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2, fill: '#3b82f6' }}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="PUNCAK ALAM"
-                            stroke="#f97316"
-                            strokeWidth={2}
-                            dot={{ fill: '#f97316', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: '#f97316', strokeWidth: 2, fill: '#f97316' }}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
+            {/* Chart */}
+            <div className="relative">
+                <div className="rounded-lg bg-white dark:bg-black">
+                    {isMounted ? (
+                        <ReactApexChart series={series} options={chartOptions} type="line" height={350} width="100%" />
+                    ) : (
+                        <div className="grid place-content-center bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08]" style={{ minHeight: 350 }}>
+                            <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-black !border-l-transparent dark:border-white"></span>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
