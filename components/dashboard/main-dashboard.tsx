@@ -1,37 +1,22 @@
 'use client';
 
-import Dropdown from '@/components/dropdown';
-import IconArrowLeft from '@/components/icon/icon-arrow-left';
-import IconBolt from '@/components/icon/icon-bolt';
-import IconCaretDown from '@/components/icon/icon-caret-down';
-import IconCashBanknotes from '@/components/icon/icon-cash-banknotes';
 import IconCreditCard from '@/components/icon/icon-credit-card';
 import IconDollarSign from '@/components/icon/icon-dollar-sign';
-import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 import IconInbox from '@/components/icon/icon-inbox';
-import IconMultipleForwardRight from '@/components/icon/icon-multiple-forward-right';
-import IconNetflix from '@/components/icon/icon-netflix';
-import IconPlus from '@/components/icon/icon-plus';
-import IconShoppingCart from '@/components/icon/icon-shopping-cart';
 import IconTag from '@/components/icon/icon-tag';
-import IconUser from '@/components/icon/icon-user';
 import { IRootState } from '@/store';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
-import ReactApexChart from 'react-apexcharts';
 import { useSelector } from 'react-redux';
-import PerfectScrollbar from 'react-perfect-scrollbar';
-import IconEye from '../icon/icon-eye';
-import { Basic } from 'next/font/google';
-import BasicPieChart from '../widgets/Basic-pie-chart';
-import PieChart from '../widgets/Pie-chart';
-import AreaChart from '../widgets/Area-chart';
+import BasicPieChart from '../widgets/main-dashboard/basic-pie-chart/Basic-pie-chart';
+import PieChart from '../widgets/main-dashboard/pie-chart/Pie-chart';
+import AreaChart from '../widgets/main-dashboard/area-chart/Area-chart';
 import SummaryBar from '../widgets/SummaryBar';
-import GrossNetProfit from '../widgets/Gross-Net-profit';
+import GrossNetProfit from '../widgets/main-dashboard/sales/Gross-Net-profit';
 import ZoneBar from '../widgets/Zone-bar';
-import { Table } from '@mantine/core';
-import TableData from '../widgets/TableData';
-import OutstandingAmountChart from '../widgets/Amount-zone-chart';
+import OutstandingAmountChart from '../widgets/main-dashboard/sales/Amount-zone-chart';
+import { StatCardData, StatsGrid } from '../widgets/main-dashboard/stat-card/StatCard';
+import { DataTable, DataTableConfig, TableColumn, TableRow } from '../widgets/main-dashboard/table-data/TableData';
 
 export default function MainDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
@@ -41,6 +26,64 @@ export default function MainDashboard() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // stat cards data
+    const schoolStats: StatCardData[] = [
+        {
+            title: 'Total Zones',
+            value: 5,
+            change: '2.35%',
+            changeType: 'positive',
+            lastWeekValue: '44,700',
+            gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
+        },
+        {
+            title: 'Total Schools',
+            value: '74,137',
+            change: '2.35%',
+            changeType: 'negative',
+            lastWeekValue: '84,709',
+            gradient: 'bg-gradient-to-r from-violet-500 to-violet-400',
+        },
+        {
+            title: 'Total Students',
+            value: '38,085',
+            change: '1.35%',
+            changeType: 'positive',
+            lastWeekValue: '37,894',
+            gradient: 'bg-gradient-to-r from-blue-500 to-blue-400',
+        },
+        {
+            title: 'Total Parents',
+            value: '49.10%',
+            change: '0.35%',
+            changeType: 'negative',
+            lastWeekValue: '50.01%',
+            gradient: 'bg-gradient-to-r from-fuchsia-500 to-fuchsia-400',
+        },
+        {
+            title: 'Total Staff',
+            value: '49.10%',
+            change: '0.35%',
+            changeType: 'negative',
+            lastWeekValue: '50.01%',
+            gradient: 'bg-gradient-to-b from-[#EF4649] to-[#F9797B]',
+            colSpan: 'md:col-span-3 lg:col-span-1',
+        },
+    ];
+
+    // Handle report actions
+    const handleViewReport = (index: number) => {
+        const stat = schoolStats[index];
+        console.log('View report for:', stat.title);
+        // Add your view report logic here
+    };
+
+    const handleEditReport = (index: number) => {
+        const stat = schoolStats[index];
+        console.log('Edit report for:', stat.title);
+        // Add your edit report logic here
+    };
 
     //Revenue Chart
     const revenueChart: any = {
@@ -331,6 +374,102 @@ export default function MainDashboard() {
         },
     };
 
+    function handleTableView(): void {
+        throw new Error('Function not implemented.');
+    }
+
+    function handleTableDelete(): void {
+        throw new Error('Function not implemented.');
+    }
+
+    // DataTable configuration
+    const outstandingAmountColumns: TableColumn[] = [
+        { key: 'zone', label: 'Zone', align: 'left', width: '200px' },
+        { key: 'monthLabel', label: '(Month/Outstanding Amount)', align: 'center', width: '200px' },
+        { key: 'january', label: 'January', align: 'center' },
+        { key: 'february', label: 'February', align: 'center' },
+        { key: 'march', label: 'March', align: 'center' },
+        { key: 'april', label: 'April', align: 'center' },
+        { key: 'may', label: 'May', align: 'center' },
+        { key: 'june', label: 'June', align: 'center' },
+        { key: 'july', label: 'July', align: 'center' },
+        { key: 'total', label: 'Total', align: 'center' },
+    ];
+
+    const outstandingAmountData: TableRow[] = [
+        {
+            zone: 'HILL PARK',
+            monthLabel: '',
+            january: 'RM 600',
+            february: 'RM 13,173',
+            march: 'RM 200',
+            april: 'RM 1,560',
+            may: 'RM 3,050',
+            june: 'RM 4,810',
+            july: 'RM 10,335',
+            total: 'RM 35,528',
+            color: 'blue',
+        },
+        {
+            zone: 'SETIA ALAM',
+            monthLabel: '',
+            january: 'RM 1,100',
+            february: 'RM 6,105',
+            march: 'RM 1,775',
+            april: 'RM 2,620',
+            may: 'RM 2,470',
+            june: 'RM 2,700',
+            july: 'RM 13,528',
+            total: 'RM 30,297',
+            color: 'purple',
+        },
+        {
+            zone: 'PUNCAK ALAM',
+            monthLabel: '',
+            january: 'RM 400',
+            february: 'RM 6,783',
+            march: 'RM 395',
+            april: null,
+            may: 'RM 650',
+            june: 'RM 8,680',
+            july: 'RM 11,507',
+            total: 'RM 28,415',
+            color: 'orange',
+        },
+        {
+            zone: 'TRANSIT',
+            monthLabel: '',
+            january: 'RM 139',
+            february: null,
+            march: null,
+            april: null,
+            may: 'RM 183',
+            june: 'RM 1,527',
+            july: 'RM 3,645',
+            total: 'RM 5,494',
+            color: 'green',
+        },
+    ];
+
+    const outstandingAmountTotals: TableRow = {
+        zone: 'Total',
+        monthLabel: '',
+        january: 'RM 2,239',
+        february: 'RM 26,061',
+        march: 'RM 4,170',
+        april: 'RM 4,180',
+        may: 'RM 6,353',
+        june: 'RM 17,717',
+        july: 'RM 39,014',
+        total: 'RM 99,734',
+    };
+
+    const outstandingAmountConfig: DataTableConfig = {
+        title: 'Outstanding Amount by Zone',
+        showColorIndicator: true,
+        showTotalRow: true,
+    };
+
     return (
         <>
             <div className="px-4 sm:px-6 lg:px-8">
@@ -347,167 +486,7 @@ export default function MainDashboard() {
 
                 <div className="pt-5">
                     {/* 1st row - KPI Cards with improved tablet responsiveness */}
-                    <div className="mb-6 grid grid-cols-1 gap-4 text-white sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-                        {/* user visit */}
-                        <div className="panel bg-gradient-to-r from-cyan-500 to-cyan-400">
-                            <div className="flex justify-between">
-                                <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Total Zones</div>
-                                <div className="dropdown">
-                                    <Dropdown
-                                        offset={[0, 5]}
-                                        placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                        btnClassName="hover:opacity-80"
-                                        button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                    >
-                                        <ul className="text-black dark:text-white-dark">
-                                            <li>
-                                                <button type="button">View Report</button>
-                                            </li>
-                                            <li>
-                                                <button type="button">Edit Report</button>
-                                            </li>
-                                        </ul>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                            <div className="mt-5 flex items-center">
-                                <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 5 </div>
-                                <div className="badge bg-white/30">+ 2.35% </div>
-                            </div>
-                            <div className="mt-5 flex items-center font-semibold">
-                                <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                                Last Week 44,700
-                            </div>
-                        </div>
-
-                        {/* Sessions */}
-                        <div className="panel bg-gradient-to-r from-violet-500 to-violet-400">
-                            <div className="flex justify-between">
-                                <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Total Schools</div>
-                                <div className="dropdown">
-                                    <Dropdown
-                                        offset={[0, 5]}
-                                        placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                        btnClassName="hover:opacity-80"
-                                        button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                    >
-                                        <ul className="text-black dark:text-white-dark">
-                                            <li>
-                                                <button type="button">View Report</button>
-                                            </li>
-                                            <li>
-                                                <button type="button">Edit Report</button>
-                                            </li>
-                                        </ul>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                            <div className="mt-5 flex items-center">
-                                <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 74,137 </div>
-                                <div className="badge bg-white/30">- 2.35% </div>
-                            </div>
-                            <div className="mt-5 flex items-center font-semibold">
-                                <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                                Last Week 84,709
-                            </div>
-                        </div>
-
-                        {/*  Time On-Site */}
-                        <div className="panel bg-gradient-to-r from-blue-500 to-blue-400">
-                            <div className="flex justify-between">
-                                <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Total Students</div>
-                                <div className="dropdown">
-                                    <Dropdown
-                                        offset={[0, 5]}
-                                        placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                        btnClassName="hover:opacity-80"
-                                        button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                    >
-                                        <ul className="text-black dark:text-white-dark">
-                                            <li>
-                                                <button type="button">View Report</button>
-                                            </li>
-                                            <li>
-                                                <button type="button">Edit Report</button>
-                                            </li>
-                                        </ul>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                            <div className="mt-5 flex items-center">
-                                <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 38,085 </div>
-                                <div className="badge bg-white/30">+ 1.35% </div>
-                            </div>
-                            <div className="mt-5 flex items-center font-semibold">
-                                <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                                Last Week 37,894
-                            </div>
-                        </div>
-
-                        {/* Bounce Rate */}
-                        <div className="panel bg-gradient-to-r from-fuchsia-500 to-fuchsia-400">
-                            <div className="flex justify-between">
-                                <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Total Parents</div>
-                                <div className="dropdown">
-                                    <Dropdown
-                                        offset={[0, 5]}
-                                        placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                        btnClassName="hover:opacity-80"
-                                        button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                    >
-                                        <ul className="text-black dark:text-white-dark">
-                                            <li>
-                                                <button type="button">View Report</button>
-                                            </li>
-                                            <li>
-                                                <button type="button">Edit Report</button>
-                                            </li>
-                                        </ul>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                            <div className="mt-5 flex items-center">
-                                <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 49.10% </div>
-                                <div className="badge bg-white/30">- 0.35% </div>
-                            </div>
-                            <div className="mt-5 flex items-center font-semibold">
-                                <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                                Last Week 50.01%
-                            </div>
-                        </div>
-
-                        {/* Total Staff */}
-                        <div className="panel bg-gradient-to-b from-[#EF4649] to-[#F9797B] md:col-span-3 lg:col-span-1">
-                            <div className="flex justify-between">
-                                <div className="text-md font-semibold ltr:mr-1 rtl:ml-1">Total Staff</div>
-                                <div className="dropdown">
-                                    <Dropdown
-                                        offset={[0, 5]}
-                                        placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                        btnClassName="hover:opacity-80"
-                                        button={<IconHorizontalDots className="opacity-70 hover:opacity-80" />}
-                                    >
-                                        <ul className="text-black dark:text-white-dark">
-                                            <li>
-                                                <button type="button">View Report</button>
-                                            </li>
-                                            <li>
-                                                <button type="button">Edit Report</button>
-                                            </li>
-                                        </ul>
-                                    </Dropdown>
-                                </div>
-                            </div>
-                            <div className="mt-5 flex items-center">
-                                <div className="text-3xl font-bold ltr:mr-3 rtl:ml-3"> 49.10% </div>
-                                <div className="badge bg-white/30">- 0.35% </div>
-                            </div>
-                            <div className="mt-5 flex items-center font-semibold">
-                                <IconEye className="shrink-0 ltr:mr-2 rtl:ml-2" />
-                                Last Week 50.01%
-                            </div>
-                        </div>
-                    </div>
+                    <StatsGrid stats={schoolStats} isRtl={isRtl} onViewReport={handleViewReport} onEditReport={handleEditReport} />
 
                     {/* Row 2 - Charts with better tablet layout */}
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
@@ -669,7 +648,16 @@ export default function MainDashboard() {
 
                     {/* Row 6 - Table Data */}
                     <div className="mb-6">
-                        <TableData />
+                        <DataTable
+                            columns={outstandingAmountColumns}
+                            data={outstandingAmountData}
+                            totals={outstandingAmountTotals}
+                            config={outstandingAmountConfig}
+                            isRtl={isRtl}
+                            onViewReport={handleTableView}
+                            onEditReport={handleTableView}
+                            onDeleteReport={handleTableDelete}
+                        />
                     </div>
 
                     {/* Row 7 - Outstanding Amount Chart */}

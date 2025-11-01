@@ -36,6 +36,10 @@ export default function BasicPieChart({
         setIsMounted(true);
     }, []);
 
+    // Determine legend count for styling
+    const legendCount = labels.length;
+    const isEvenCount = legendCount % 2 === 0 && legendCount >= 4;
+
     const pieChart: any = {
         series: series,
         options: {
@@ -125,7 +129,7 @@ export default function BasicPieChart({
             <div>
                 <div className="rounded-lg bg-white dark:bg-black flex items-center justify-center" style={{ minHeight: height + 50 }}>
                     {isMounted ? (
-                        <div className="flex items-center justify-center w-full h-full pie-chart-container">
+                        <div className={`flex items-center justify-center w-full h-full pie-chart-container ${isEvenCount ? 'even-legend' : ''}`}>
                             <ReactApexChart series={pieChart.series} options={pieChart.options} type="pie" height={height} width="100%" />
                         </div>
                     ) : (
@@ -137,6 +141,7 @@ export default function BasicPieChart({
                 <style
                     dangerouslySetInnerHTML={{
                         __html: `
+                        /* Default styling - for odd numbers or less than 4 items */
                         .pie-chart-container .apexcharts-legend {
                             display: flex !important;
                             flex-wrap: wrap !important;
@@ -146,14 +151,31 @@ export default function BasicPieChart({
                             margin: 0 auto !important;
                         }
                         .pie-chart-container .apexcharts-legend-series {
-                            flex: 0 0 calc(50% - 20px) !important;
-                            max-width: calc(50% - 20px) !important;
                             margin: 4px 10px !important;
                             display: flex !important;
                             align-items: center !important;
                             justify-content: center !important;
                             text-align: center !important;
                         }
+                        
+                        /* Special styling for even count (4 or more items) */
+                        .pie-chart-container.even-legend .apexcharts-legend {
+                            justify-content: flex-start !important;
+                            padding-left: 20px !important;
+                        }
+                        .pie-chart-container.even-legend .apexcharts-legend-series {
+                            flex: 0 0 calc(50% - 20px) !important;
+                            max-width: calc(50% - 20px) !important;
+                            justify-content: flex-start !important;
+                            text-align: left !important;
+                        }
+                        .pie-chart-container.even-legend .apexcharts-legend-series:nth-child(odd) {
+                            padding-right: 10px !important;
+                        }
+                        .pie-chart-container.even-legend .apexcharts-legend-series:nth-child(even) {
+                            padding-left: 10px !important;
+                        }
+                        
                         .pie-chart-container .apexcharts-legend-marker {
                             margin-right: 6px !important;
                         }
