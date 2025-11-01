@@ -125,13 +125,19 @@ const Sidebar = () => {
                                             <Link href="/">{t('sales')}</Link>
                                         </li>
                                         <li>
-                                            <Link href="/analytics">{t('analytics')}</Link>
+                                            <Link href="/dashboard/registration">{t('Registration')}</Link>
                                         </li>
                                         <li>
-                                            <Link href="/finance">{t('finance')}</Link>
+                                            <Link href="/dashboard/marketing">{t('Marketing')}</Link>
                                         </li>
                                         <li>
-                                            <Link href="/crypto">{t('crypto')}</Link>
+                                            <Link href="/dashboard/academic">{t('Academic')}</Link>
+                                        </li>
+                                        <li>
+                                            <Link href="/dashboard/zone">{t('Zone & School')}</Link>
+                                        </li>
+                                        <li>
+                                            <Link href="/dashboard/subject">{t('Subject')}</Link>
                                         </li>
                                     </ul>
                                 </AnimateHeight>
