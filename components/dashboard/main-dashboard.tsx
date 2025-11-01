@@ -68,7 +68,6 @@ export default function MainDashboard() {
             changeType: 'negative',
             lastWeekValue: '50.01%',
             gradient: 'bg-gradient-to-b from-[#EF4649] to-[#F9797B]',
-            colSpan: 'md:col-span-3 lg:col-span-1',
         },
     ];
 
