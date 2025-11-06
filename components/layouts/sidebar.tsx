@@ -134,7 +134,7 @@ const Sidebar = () => {
                                             <Link href="/dashboard/academic">{t('Academic')}</Link>
                                         </li>
                                         <li>
-                                            <Link href="/dashboard/zone">{t('Zone & School')}</Link>
+                                            <Link href="/dashboard/school-zone">{t('Zone & School')}</Link>
                                         </li>
                                         <li>
                                             <Link href="/dashboard/subject">{t('Subject')}</Link>

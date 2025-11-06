@@ -61,10 +61,17 @@ export const StatCard: React.FC<StatCardProps> = ({ data, isRtl = false, onViewR
             </div>
 
             {/* Last Week Info */}
-            <div className="mt-3 flex items-center text-xs font-semibold sm:mt-4 md:mt-3 md:text-[11px] lg:mt-5 lg:text-sm">
+            {/* <div className="mt-3 flex items-center text-xs font-semibold sm:mt-4 md:mt-3 md:text-[11px] lg:mt-5 lg:text-sm">
                 <IconEye className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-5 lg:w-5 ltr:mr-1.5 rtl:ml-1.5 sm:ltr:mr-2 sm:rtl:ml-2" />
                 <span className="truncate">Last Week {data.lastWeekValue}</span>
-            </div>
+            </div> */}
+            {/* Last Week Info */}
+            {data.lastWeekValue && (
+                <div className="mt-3 flex items-center text-xs font-semibold sm:mt-4 md:mt-3 md:text-[11px] lg:mt-5 lg:text-sm">
+                    <IconEye className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-5 lg:w-5 ltr:mr-1.5 rtl:ml-1.5 sm:ltr:mr-2 sm:rtl:ml-2" />
+                    <span className="truncate">Last Week {data.lastWeekValue}</span>
+                </div>
+            )}
         </div>
     );
 };
