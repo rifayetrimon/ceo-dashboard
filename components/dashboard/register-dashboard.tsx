@@ -333,13 +333,13 @@ export default function RegisterDashboard() {
     };
 
     // Handle zone table filter changes
-    const handleZoneTableFilter = (filterNumber: 1 | 2 | 3 | 4, value: string) => {
+    const handleZoneTableFilter = (filterNumber: 1 | 2 | 3 | 4 | 5 | 6, value: string) => {
         console.log(`Zone Table - Filter ${filterNumber} changed to:`, value);
         // Fetch new data based on selected filter
     };
 
     // Handle state table filter changes
-    const handleStateTableFilter = (filterNumber: 1 | 2 | 3 | 4, value: string) => {
+    const handleStateTableFilter = (filterNumber: 1 | 2 | 3 | 4 | 5 | 6, value: string) => {
         console.log(`State Table - Filter ${filterNumber} changed to:`, value);
         // Fetch new data based on selected filter
     };

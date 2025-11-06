@@ -138,7 +138,7 @@ export default function MarketingDashboard() {
         },
     };
 
-    function handleStateTableFilter(filterNumber: 4 | 3 | 2 | 1, value: string): void {
+    function handleStateTableFilter(filterNumber: 1 | 2 | 3 | 4 | 5 | 6, value: string): void {
         throw new Error('Function not implemented.');
     }
 

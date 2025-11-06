@@ -37,6 +37,8 @@ export interface DataTableWithFiltersConfig {
         filter2?: FilterConfig;
         filter3?: FilterConfig;
         filter4?: FilterConfig;
+        filter5?: FilterConfig;
+        filter6?: FilterConfig;
     };
 }
 
@@ -46,7 +48,7 @@ interface DataTableWithFiltersProps {
     totals?: TableRow;
     config: DataTableWithFiltersConfig;
     isRtl?: boolean;
-    onFilterChange?: (filterNumber: 1 | 2 | 3 | 4, value: string) => void;
+    onFilterChange?: (filterNumber: 1 | 2 | 3 | 4 | 5 | 6, value: string) => void;
 }
 
 export const DataTableWithFilters: React.FC<DataTableWithFiltersProps> = ({ columns, data, totals, config, isRtl = false, onFilterChange }) => {
@@ -75,14 +77,14 @@ export const DataTableWithFilters: React.FC<DataTableWithFiltersProps> = ({ colu
         return colorMap[color.toLowerCase()] || '';
     };
 
-    const handleFilterSelect = (filterNumber: 1 | 2 | 3 | 4, value: string) => {
+    const handleFilterSelect = (filterNumber: 1 | 2 | 3 | 4 | 5 | 6, value: string) => {
         if (onFilterChange) {
             onFilterChange(filterNumber, value);
         }
     };
 
     // Check if any filters are configured
-    const hasFilters = config.filters && (config.filters.filter1 || config.filters.filter2 || config.filters.filter3 || config.filters.filter4);
+    const hasFilters = config.filters && (config.filters.filter1 || config.filters.filter2 || config.filters.filter3 || config.filters.filter4 || config.filters.filter5 || config.filters.filter6);
 
     return (
         <div className="panel h-full">
@@ -206,6 +208,68 @@ export const DataTableWithFilters: React.FC<DataTableWithFiltersProps> = ({ colu
                                         <button
                                             type="button"
                                             onClick={() => handleFilterSelect(4, option)}
+                                            className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                                isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                                            }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    </li>
+                                ))}
+                            </SmallDropdown>
+                        )}
+
+                        {/* Filter 5 */}
+                        {config.filters?.filter5 && (
+                            <SmallDropdown
+                                offset={[0, 5]}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                btnClassName={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:border-primary ${
+                                    isDark ? 'border-gray-600 bg-gray-800 text-white hover:bg-gray-700' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                                button={
+                                    <>
+                                        <span>{config.filters.filter5.label}</span>
+                                        <IconCaretDown className="h-3.5 w-3.5" />
+                                    </>
+                                }
+                            >
+                                {config.filters.filter5.options.map((option, index) => (
+                                    <li key={index}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleFilterSelect(5, option)}
+                                            className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                                isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                                            }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    </li>
+                                ))}
+                            </SmallDropdown>
+                        )}
+
+                        {/* Filter 6 */}
+                        {config.filters?.filter6 && (
+                            <SmallDropdown
+                                offset={[0, 5]}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                btnClassName={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:border-primary ${
+                                    isDark ? 'border-gray-600 bg-gray-800 text-white hover:bg-gray-700' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                                button={
+                                    <>
+                                        <span>{config.filters.filter6.label}</span>
+                                        <IconCaretDown className="h-3.5 w-3.5" />
+                                    </>
+                                }
+                            >
+                                {config.filters.filter6.options.map((option, index) => (
+                                    <li key={index}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleFilterSelect(6, option)}
                                             className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
                                                 isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-gray-900'
                                             }`}

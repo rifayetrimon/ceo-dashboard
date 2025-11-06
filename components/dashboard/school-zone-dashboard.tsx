@@ -142,7 +142,7 @@ export default function SchoolZone() {
         console.log('View report for:', index);
     }
 
-    function handleZoneTableFilter(filterNumber: 2 | 3 | 4 | 1, value: string): void {
+    function handleZoneTableFilter(filterNumber: 1 | 2 | 3 | 4 | 5 | 6, value: string): void {
         throw new Error('Function not implemented.');
     }
 
