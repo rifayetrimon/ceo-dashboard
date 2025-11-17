@@ -1,4 +1,3 @@
-// // services/user/userService.ts
 import myAxios from '@/lib/myAxios';
 
 export const getUserProfile = async () => {

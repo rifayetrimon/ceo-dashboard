@@ -19,61 +19,134 @@ import { StatCardData, StatsGrid } from '../widgets/main-dashboard/stat-card/Sta
 import { DataTable, DataTableConfig, TableColumn, TableRow } from '../widgets/main-dashboard/table-data/TableData';
 import IconUser from '../icon/icon-user';
 import Image from 'next/image';
+import { dashboardService } from '@/services/sales/salesService';
 
 export default function MainDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
-
     const [isMounted, setIsMounted] = useState(false);
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // stat cards data
-    const schoolStats: StatCardData[] = [
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<StatCardData[]>([]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+            const response = await dashboardService.getSystemInfo();
+            console.log('Dashboard data:', response);
+
+            // Check if response has the expected structure
+            if (response?.data?.systemInfo) {
+                const systemInfo = response.data.systemInfo;
+
+                // Update stats with API data
+                const updatedStats: StatCardData[] = [
+                    {
+                        title: 'Total Zones',
+                        value: systemInfo.totalBranch?.toString() || '0',
+                        valueSize: 'xl',
+                        gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
+                        iconSize: 'xl',
+                        icon: <Image src="/assets/images/icons/zone1.svg" alt="zones" width={35} height={35} className="brightness-0 invert opacity-90" />,
+                    },
+                    {
+                        title: 'Total Schools',
+                        value: systemInfo.totalClient?.toLocaleString() || '0',
+                        valueSize: 'xl',
+                        gradient: 'bg-gradient-to-r from-violet-500 to-violet-400',
+                        iconSize: 'xl',
+                        icon: <Image src="/assets/images/icons/school.svg" alt="school" width={35} height={35} className="brightness-0 invert opacity-90" />,
+                    },
+                    {
+                        title: 'Total Students',
+                        value: systemInfo.totalStudent?.toLocaleString() || '0',
+                        valueSize: 'xl',
+                        gradient: 'bg-gradient-to-r from-blue-500 to-blue-400',
+                        iconSize: 'xl',
+                        icon: <Image src="/assets/images/icons/students.svg" alt="student" width={35} height={35} className="brightness-0 invert opacity-90" />,
+                    },
+                    {
+                        title: 'Total Staff',
+                        value: systemInfo.totalStaff?.toLocaleString() || '0',
+                        valueSize: 'xl',
+                        gradient: 'bg-gradient-to-b from-[#EF4649] to-[#F9797B]',
+                        iconSize: 'xl',
+                        icon: <Image src="/assets/images/icons/staff.svg" alt="staff" width={35} height={35} className="brightness-0 invert opacity-90" />,
+                    },
+                ];
+
+                setStats(updatedStats);
+            }
+        } catch (error) {
+            console.error('Failed to fetch dashboard data:', error);
+            // Set default stats on error
+            setStats(getDefaultStats());
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Default stats function for fallback
+    const getDefaultStats = (): StatCardData[] => [
         {
             title: 'Total Zones',
-            value: 5,
+            value: '0',
             valueSize: 'xl',
             gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
-            iconSize: 'xl', // Controls the container size (h-10 w-10)
+            iconSize: 'xl',
             icon: <Image src="/assets/images/icons/zone1.svg" alt="zones" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
         {
             title: 'Total Schools',
-            value: '74,137',
+            value: '0',
             valueSize: 'xl',
             gradient: 'bg-gradient-to-r from-violet-500 to-violet-400',
-            iconSize: 'xl', // Controls the container size (h-7 w-7)
+            iconSize: 'xl',
             icon: <Image src="/assets/images/icons/school.svg" alt="school" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
         {
             title: 'Total Students',
-            value: '38,085',
+            value: '0',
             valueSize: 'xl',
             gradient: 'bg-gradient-to-r from-blue-500 to-blue-400',
-            iconSize: 'xl', // Largest size (h-12 w-12)
+            iconSize: 'xl',
             icon: <Image src="/assets/images/icons/students.svg" alt="student" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
         {
             title: 'Total Staff',
-            value: '49.10%',
+            value: '0',
             valueSize: 'xl',
             gradient: 'bg-gradient-to-b from-[#EF4649] to-[#F9797B]',
-            iconSize: 'xl', // Default size (h-5 w-5)
+            iconSize: 'xl',
             icon: <Image src="/assets/images/icons/staff.svg" alt="staff" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
     ];
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
     // Handle report actions
     const handleViewReport = (index: number) => {
-        const stat = schoolStats[index];
+        const stat = stats[index];
         console.log('View report for:', stat.title);
         // Add your view report logic here
     };
 
     const handleEditReport = (index: number) => {
-        const stat = schoolStats[index];
+        const stat = stats[index];
         console.log('Edit report for:', stat.title);
         // Add your edit report logic here
     };
@@ -160,9 +233,9 @@ export default function MainDashboard() {
                 },
             },
             yaxis: {
-                min: 1000000, // force start at 1M
-                max: 7000000, // force up to 7M
-                tickAmount: 6, // creates ticks at 1M, 2M, 3M, ... 7M
+                min: 1000000,
+                max: 7000000,
+                tickAmount: 6,
                 labels: {
                     formatter: (value: number) => {
                         return value / 1000000 + 'M';
@@ -479,7 +552,7 @@ export default function MainDashboard() {
 
                 <div className="pt-5">
                     {/* 1st row - KPI Cards with improved tablet responsiveness */}
-                    <StatsGrid stats={schoolStats} isRtl={isRtl} onViewReport={handleViewReport} onEditReport={handleEditReport} />
+                    <StatsGrid stats={stats} isRtl={isRtl} onViewReport={handleViewReport} onEditReport={handleEditReport} />
 
                     {/* Row 2 - Charts with better tablet layout */}
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
