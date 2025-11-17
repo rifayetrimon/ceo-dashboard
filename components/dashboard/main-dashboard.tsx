@@ -17,6 +17,8 @@ import ZoneBar from '../widgets/Zone-bar';
 import OutstandingAmountChart from '../widgets/main-dashboard/sales/Amount-zone-chart';
 import { StatCardData, StatsGrid } from '../widgets/main-dashboard/stat-card/StatCard';
 import { DataTable, DataTableConfig, TableColumn, TableRow } from '../widgets/main-dashboard/table-data/TableData';
+import IconUser from '../icon/icon-user';
+import Image from 'next/image';
 
 export default function MainDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
@@ -32,42 +34,34 @@ export default function MainDashboard() {
         {
             title: 'Total Zones',
             value: 5,
-            change: '2.35%',
-            changeType: 'positive',
-            lastWeekValue: '44,700',
+            valueSize: 'xl',
             gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
+            iconSize: 'xl', // Controls the container size (h-10 w-10)
+            icon: <Image src="/assets/images/icons/zone1.svg" alt="zones" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
         {
             title: 'Total Schools',
             value: '74,137',
-            change: '2.35%',
-            changeType: 'negative',
-            lastWeekValue: '84,709',
+            valueSize: 'xl',
             gradient: 'bg-gradient-to-r from-violet-500 to-violet-400',
+            iconSize: 'xl', // Controls the container size (h-7 w-7)
+            icon: <Image src="/assets/images/icons/school.svg" alt="school" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
         {
             title: 'Total Students',
             value: '38,085',
-            change: '1.35%',
-            changeType: 'positive',
-            lastWeekValue: '37,894',
+            valueSize: 'xl',
             gradient: 'bg-gradient-to-r from-blue-500 to-blue-400',
-        },
-        {
-            title: 'Total Parents',
-            value: '49.10%',
-            change: '0.35%',
-            changeType: 'negative',
-            lastWeekValue: '50.01%',
-            gradient: 'bg-gradient-to-r from-fuchsia-500 to-fuchsia-400',
+            iconSize: 'xl', // Largest size (h-12 w-12)
+            icon: <Image src="/assets/images/icons/students.svg" alt="student" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
         {
             title: 'Total Staff',
             value: '49.10%',
-            change: '0.35%',
-            changeType: 'negative',
-            lastWeekValue: '50.01%',
+            valueSize: 'xl',
             gradient: 'bg-gradient-to-b from-[#EF4649] to-[#F9797B]',
+            iconSize: 'xl', // Default size (h-5 w-5)
+            icon: <Image src="/assets/images/icons/staff.svg" alt="staff" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
     ];
 
@@ -479,7 +473,7 @@ export default function MainDashboard() {
                         </Link>
                     </li>
                     <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2">
-                        <span>Main</span>
+                        <span>Sales</span>
                     </li>
                 </ul>
 

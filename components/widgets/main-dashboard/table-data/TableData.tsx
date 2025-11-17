@@ -75,7 +75,7 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
     return (
         <div className="panel h-full">
             {/* Header */}
-            <div className="mb-5 flex items-center justify-between dark:text-white-light px-6 pt-4">
+            <div className="mb-5 flex items-center justify-between dark:text-white-light pb-4 pt-4">
                 <h5 className="text-lg font-semibold">{config.title}</h5>
                 {dropdownOptions.length > 0 && (
                     <div className="dropdown">
