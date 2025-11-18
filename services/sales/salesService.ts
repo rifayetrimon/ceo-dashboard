@@ -22,6 +22,13 @@ interface DashboardResponse {
 interface MonthlyRecord {
     month: number;
     total: number;
+    categories?: CategoryData[];
+}
+
+interface CategoryData {
+    code: string;
+    name: string;
+    total: number;
 }
 
 interface YearlyData {
@@ -30,9 +37,10 @@ interface YearlyData {
     records: MonthlyRecord[];
 }
 
-interface Branch {
+export interface Branch {
     branchId: number;
     name: string;
+    zone?: string;
     monthly_revenue: YearlyData[];
     monthly_cost: YearlyData[];
     monthly_profit: YearlyData[];
@@ -50,6 +58,7 @@ interface FinanceSummaryResponse {
 
 export interface ProcessedFinanceData {
     years: string[];
+    branches: Branch[];
     revenueByYear: { [year: string]: number[] };
     costByYear: { [year: string]: number[] };
     profitByYear: { [year: string]: number[] };
@@ -60,13 +69,46 @@ export interface ChartSeriesData {
     data: number[];
 }
 
-// ===== EXISTING SERVICE FUNCTIONS =====
+// Zone Data Interfaces
+export interface ZoneData {
+    name: string;
+    income: number;
+    expenses: number;
+    profit: number;
+}
+
+export interface ZoneFinancialData {
+    year: string;
+    zones: ZoneData[];
+}
+
+export interface ProcessedZoneData {
+    years: string[];
+    zonesByYear: {
+        [year: string]: {
+            zones: string[];
+            income: number[];
+            expenses: number[];
+            profit: number[];
+        };
+    };
+}
+
+// Zone Financial Summary Interface
+export interface ZoneFinancialSummary {
+    zoneName: string;
+    totalIncome: number;
+    totalExpense: number;
+    totalProfit: number;
+}
+
+// ===== DASHBOARD SERVICE FUNCTIONS =====
 
 export const dashboardService = {
     // Get System Info
     getSystemInfo: async (appCode: string | null = null, dbName: string = ''): Promise<DashboardResponse> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard-new`, {
+            const response = await fetch(`${API_BASE_URL}/dashboard`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -92,7 +134,7 @@ export const dashboardService = {
     // Generic dashboard data fetch
     getDashboardData: async (payload: string, appCode: string | null = null, dbName: string = ''): Promise<DashboardResponse> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard-new`, {
+            const response = await fetch(`${API_BASE_URL}/dashboard`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -123,7 +165,7 @@ export const dashboardService = {
  */
 export const getFinanceSummary = async (appCode: string | null = null, dbName: string = ''): Promise<FinanceSummaryResponse> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard-new`, {
+        const response = await fetch(`${API_BASE_URL}/dashboard`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -208,6 +250,7 @@ export const processFinanceData = (branches: Branch[]): ProcessedFinanceData => 
 
     return {
         years,
+        branches,
         revenueByYear,
         costByYear,
         profitByYear,
@@ -299,6 +342,173 @@ export const getBranchData = (branches: Branch[], branchId: number, year: number
         profit,
     };
 };
+
+// ===== ZONE DATA FUNCTIONS =====
+
+/**
+ * Process Zone Financial Data from Branches
+ * Groups branches by zone and calculates income, expenses, and profit
+ */
+export const processZoneData = (branches: Branch[], year: number): ProcessedZoneData => {
+    const zoneMap: {
+        [zoneName: string]: {
+            income: number;
+            expenses: number;
+            profit: number;
+        };
+    } = {};
+
+    // Aggregate data by zone
+    branches.forEach((branch) => {
+        // Use zone if available, otherwise use branch name
+        const zoneName = branch.zone || branch.name;
+
+        // Get revenue for the year
+        const revenueYear = branch.monthly_revenue.find((y) => y.year === year);
+        const revenue = revenueYear?.records.reduce((sum, r) => sum + r.total, 0) || 0;
+
+        // Get cost for the year
+        const costYear = branch.monthly_cost.find((y) => y.year === year);
+        const cost = costYear?.records.reduce((sum, r) => sum + r.total, 0) || 0;
+
+        // Calculate profit
+        const profit = revenue - cost;
+
+        if (!zoneMap[zoneName]) {
+            zoneMap[zoneName] = {
+                income: 0,
+                expenses: 0,
+                profit: 0,
+            };
+        }
+
+        zoneMap[zoneName].income += revenue;
+        zoneMap[zoneName].expenses += cost;
+        zoneMap[zoneName].profit += profit;
+    });
+
+    // Convert to arrays for chart
+    const zones = Object.keys(zoneMap).sort();
+    const income = zones.map((zone) => zoneMap[zone].income);
+    const expenses = zones.map((zone) => zoneMap[zone].expenses);
+    const profit = zones.map((zone) => zoneMap[zone].profit);
+
+    return {
+        years: [year.toString()],
+        zonesByYear: {
+            [year.toString()]: {
+                zones,
+                income,
+                expenses,
+                profit,
+            },
+        },
+    };
+};
+
+/**
+ * Calculate zone-wise financial data from branches
+ * Maps branches to their zones using system info and aggregates financial data
+ */
+export const calculateZoneWiseFinancials = (financeBranches: any[], systemBranches: any[], year: number): ZoneFinancialSummary[] => {
+    // Create a map of branchId to zone information
+    const branchZoneMap: { [branchId: number]: { zone: string; zoneName: string } } = {};
+
+    systemBranches.forEach((branch: any) => {
+        if (branch.zone && branch.zone.trim() !== '') {
+            branchZoneMap[branch.branchId] = {
+                zone: branch.zone,
+                zoneName: branch.zoneName || branch.zone,
+            };
+        }
+    });
+
+    // Aggregate financial data by zone
+    const zoneData: { [zoneName: string]: { income: number; expense: number; profit: number } } = {};
+
+    financeBranches.forEach((branch: any) => {
+        const zoneInfo = branchZoneMap[branch.branchId];
+        if (!zoneInfo) return; // Skip branches without zone info
+
+        const zoneName = zoneInfo.zoneName;
+
+        // Initialize zone if not exists
+        if (!zoneData[zoneName]) {
+            zoneData[zoneName] = { income: 0, expense: 0, profit: 0 };
+        }
+
+        // Calculate income for the year
+        const revenueYear = branch.monthly_revenue?.find((y: any) => y.year === year);
+        if (revenueYear) {
+            const yearRevenue = revenueYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+            zoneData[zoneName].income += yearRevenue;
+        }
+
+        // Calculate expense for the year
+        const costYear = branch.monthly_cost?.find((y: any) => y.year === year);
+        if (costYear) {
+            const yearCost = costYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+            zoneData[zoneName].expense += yearCost;
+        }
+
+        // Calculate profit for the year
+        const profitYear = branch.monthly_profit?.find((y: any) => y.year === year);
+        if (profitYear) {
+            const yearProfit = profitYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+            zoneData[zoneName].profit += yearProfit;
+        }
+    });
+
+    // Convert to array format and sort by zone name
+    return Object.entries(zoneData)
+        .map(([zoneName, data]) => ({
+            zoneName,
+            totalIncome: data.income,
+            totalExpense: data.expense,
+            totalProfit: data.profit,
+        }))
+        .sort((a, b) => a.zoneName.localeCompare(b.zoneName));
+};
+
+/**
+ * Get Zone Chart Series for a specific year
+ */
+export const getZoneChartSeries = (
+    processedData: ProcessedZoneData,
+    year: string,
+): {
+    series: { name: string; data: number[] }[];
+    categories: string[];
+} => {
+    const yearData = processedData.zonesByYear[year];
+
+    if (!yearData) {
+        return {
+            series: [],
+            categories: [],
+        };
+    }
+
+    return {
+        series: [
+            {
+                name: 'Income',
+                data: yearData.income,
+            },
+            {
+                name: 'Expenses',
+                data: yearData.expenses,
+            },
+            {
+                name: 'Profit',
+                data: yearData.profit,
+            },
+        ],
+        categories: yearData.zones,
+    };
+};
+
+// ===== UTILITY FUNCTIONS =====
 
 /**
  * Format currency for display

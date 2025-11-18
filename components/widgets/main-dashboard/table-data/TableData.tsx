@@ -12,11 +12,13 @@ export interface TableColumn {
     label: string;
     align?: 'left' | 'center' | 'right';
     width?: string;
+    clickable?: boolean; // New: Mark column as clickable
 }
 
 export interface TableRow {
     [key: string]: string | number | null | undefined;
     color?: string; // Optional color indicator
+    id?: string | number; // New: Optional ID for row identification
 }
 
 export interface DataTableConfig {
@@ -38,9 +40,10 @@ interface DataTableProps {
     onViewReport?: () => void;
     onEditReport?: () => void;
     onDeleteReport?: () => void;
+    onCellClick?: (row: TableRow, columnKey: string) => void; // New: Handler for cell clicks
 }
 
-export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, config, isRtl = false, onViewReport, onEditReport, onDeleteReport }) => {
+export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, config, isRtl = false, onViewReport, onEditReport, onDeleteReport, onCellClick }) => {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
 
     // Default colors
@@ -70,6 +73,12 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
             teal: 'bg-teal-500',
         };
         return colorMap[color.toLowerCase()] || '';
+    };
+
+    const handleCellClick = (row: TableRow, columnKey: string) => {
+        if (onCellClick) {
+            onCellClick(row, columnKey);
+        }
     };
 
     return (
@@ -130,6 +139,7 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
                                 {columns.map((column, colIndex) => {
                                     const value = row[column.key];
                                     const isFirstColumn = colIndex === 0;
+                                    const isClickable = column.clickable && onCellClick;
 
                                     return (
                                         <td
@@ -139,7 +149,16 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
                                             } ${isDark ? 'text-gray-300' : 'text-gray-900'} ${isFirstColumn && config.showColorIndicator ? 'flex items-center' : ''}`}
                                         >
                                             {isFirstColumn && config.showColorIndicator && row.color && <span className={`inline-block w-2 h-2 rounded-full mr-3 ${getColorClass(row.color)}`} />}
-                                            {value ?? '-'}
+                                            {isClickable ? (
+                                                <button
+                                                    onClick={() => handleCellClick(row, column.key)}
+                                                    className={`${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} hover:underline focus:outline-none`}
+                                                >
+                                                    {value ?? '-'}
+                                                </button>
+                                            ) : (
+                                                (value ?? '-')
+                                            )}
                                         </td>
                                     );
                                 })}

@@ -6,6 +6,7 @@ import IconInbox from '@/components/icon/icon-inbox';
 import IconTag from '@/components/icon/icon-tag';
 import { IRootState } from '@/store';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import BasicPieChart from '../widgets/main-dashboard/basic-pie-chart/Basic-pie-chart';
@@ -27,21 +28,25 @@ import {
     dashboardService,
     ProcessedFinanceData,
     ChartSeriesData,
+    calculateZoneWiseFinancials,
 } from '@/services/sales/salesService';
 
 export default function MainDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
     const [isMounted, setIsMounted] = useState(false);
+    const router = useRouter();
 
     // System Info State
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<StatCardData[]>([]);
+    const [dashboardMetrics, setDashboardMetrics] = useState<any>(null);
 
     // Finance Data State
     const [financeData, setFinanceData] = useState<ProcessedFinanceData | null>(null);
-    const [selectedYear, setSelectedYear] = useState<string>('2022');
+    const [selectedYear, setSelectedYear] = useState<string>('2025');
     const [chartSeries, setChartSeries] = useState<ChartSeriesData[]>([]);
+    const [selectedSummaryYear, setSelectedSummaryYear] = useState<string>('2025');
     const [financeTotals, setFinanceTotals] = useState({
         revenue: 0,
         cost: 0,
@@ -55,7 +60,6 @@ export default function MainDashboard() {
 
     useEffect(() => {
         fetchDashboardData();
-        fetchFinanceData();
     }, []);
 
     // Update chart when year changes
@@ -65,22 +69,232 @@ export default function MainDashboard() {
         }
     }, [selectedYear, financeData]);
 
+    const handleSummaryYearChange = (year: string) => {
+        setSelectedSummaryYear(year);
+
+        if (dashboardMetrics?.yearWiseTotals && dashboardMetrics.yearWiseTotals[year]) {
+            const yearData = dashboardMetrics.yearWiseTotals[year];
+            setFinanceTotals({
+                revenue: yearData.totalIncome,
+                cost: yearData.totalExpense,
+                profit: yearData.totalProfit,
+                profitMargin: yearData.totalIncome > 0 ? ((yearData.totalProfit / yearData.totalIncome) * 100).toFixed(2) : '0.00',
+            });
+        }
+    };
+
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const response = await dashboardService.getSystemInfo();
-            console.log('Dashboard data:', response);
 
-            // Check if response has the expected structure
-            if (response?.data?.systemInfo) {
-                const systemInfo = response.data.systemInfo;
-                const branches = response.data.branches || [];
+            // Fetch both APIs
+            const [systemInfoResponse, financeSummaryResponse] = await Promise.all([dashboardService.getSystemInfo(), getFinanceSummary()]);
 
-                // Count unique zones (exclude empty zones)
+            console.log('System Info:', systemInfoResponse);
+            console.log('Finance Summary:', financeSummaryResponse);
+
+            // Check if responses have the expected structure
+            if (systemInfoResponse?.data?.systemInfo && financeSummaryResponse?.data?.branches) {
+                const systemInfo = systemInfoResponse.data.systemInfo;
+                const branches = systemInfoResponse.data.branches || [];
+                const financeBranches = financeSummaryResponse.data.branches || [];
+
+                // ===== CALCULATE UNIQUE ZONES =====
                 const uniqueZones = new Set(branches.map((branch: any) => branch.zone).filter((zone: string) => zone && zone.trim() !== ''));
                 const totalUniqueZones = uniqueZones.size;
 
-                // Update stats with API data
+                // ===== CALCULATE YEAR-WISE TOTALS FOR ALL BRANCHES =====
+                const yearWiseTotals: {
+                    [year: string]: {
+                        totalIncome: number;
+                        totalExpense: number;
+                        totalProfit: number;
+                        monthlyIncome: number[];
+                        monthlyExpense: number[];
+                        monthlyProfit: number[];
+                    };
+                } = {};
+
+                // Extract all unique years
+                const yearsSet = new Set<number>();
+                financeBranches.forEach((branch: any) => {
+                    branch.monthly_revenue?.forEach((yearData: any) => {
+                        yearsSet.add(yearData.year);
+                    });
+                });
+                const years = Array.from(yearsSet).sort((a, b) => b - a);
+
+                // Initialize year-wise data
+                years.forEach((year) => {
+                    yearWiseTotals[year] = {
+                        totalIncome: 0,
+                        totalExpense: 0,
+                        totalProfit: 0,
+                        monthlyIncome: new Array(12).fill(0),
+                        monthlyExpense: new Array(12).fill(0),
+                        monthlyProfit: new Array(12).fill(0),
+                    };
+                });
+
+                // Calculate totals for all branches combined
+                financeBranches.forEach((branch: any) => {
+                    years.forEach((year) => {
+                        // Process revenue
+                        const revenueYear = branch.monthly_revenue?.find((y: any) => y.year === year);
+                        if (revenueYear) {
+                            revenueYear.records.forEach((record: any) => {
+                                yearWiseTotals[year].monthlyIncome[record.month - 1] += record.total;
+                                yearWiseTotals[year].totalIncome += record.total;
+                            });
+                        }
+
+                        // Process cost
+                        const costYear = branch.monthly_cost?.find((y: any) => y.year === year);
+                        if (costYear) {
+                            costYear.records.forEach((record: any) => {
+                                yearWiseTotals[year].monthlyExpense[record.month - 1] += record.total;
+                                yearWiseTotals[year].totalExpense += record.total;
+                            });
+                        }
+
+                        // Process profit
+                        const profitYear = branch.monthly_profit?.find((y: any) => y.year === year);
+                        if (profitYear) {
+                            profitYear.records.forEach((record: any) => {
+                                yearWiseTotals[year].monthlyProfit[record.month - 1] += record.total;
+                                yearWiseTotals[year].totalProfit += record.total;
+                            });
+                        }
+                    });
+                });
+
+                // ===== CALCULATE ZONE-WISE TOTALS =====
+                const zoneWiseData: {
+                    [zoneName: string]: {
+                        [year: string]: {
+                            totalIncome: number;
+                            totalExpense: number;
+                            totalProfit: number;
+                            branches: string[];
+                        };
+                    };
+                } = {};
+
+                // Map branchId to zone from system info
+                const branchZoneMap: { [branchId: number]: string } = {};
+                branches.forEach((branch: any) => {
+                    if (branch.zone && branch.zone.trim() !== '') {
+                        branchZoneMap[branch.branchId] = branch.zoneName || branch.zone;
+                    }
+                });
+
+                // Calculate zone-wise totals
+                financeBranches.forEach((branch: any) => {
+                    const zoneName = branchZoneMap[branch.branchId] || 'Unknown Zone';
+
+                    if (!zoneWiseData[zoneName]) {
+                        zoneWiseData[zoneName] = {};
+                    }
+
+                    years.forEach((year) => {
+                        if (!zoneWiseData[zoneName][year]) {
+                            zoneWiseData[zoneName][year] = {
+                                totalIncome: 0,
+                                totalExpense: 0,
+                                totalProfit: 0,
+                                branches: [],
+                            };
+                        }
+
+                        // Add branch name if not already added
+                        if (!zoneWiseData[zoneName][year].branches.includes(branch.name)) {
+                            zoneWiseData[zoneName][year].branches.push(branch.name);
+                        }
+
+                        // Calculate revenue
+                        const revenueYear = branch.monthly_revenue?.find((y: any) => y.year === year);
+                        if (revenueYear) {
+                            const yearRevenue = revenueYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+                            zoneWiseData[zoneName][year].totalIncome += yearRevenue;
+                        }
+
+                        // Calculate cost
+                        const costYear = branch.monthly_cost?.find((y: any) => y.year === year);
+                        if (costYear) {
+                            const yearCost = costYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+                            zoneWiseData[zoneName][year].totalExpense += yearCost;
+                        }
+
+                        // Calculate profit
+                        const profitYear = branch.monthly_profit?.find((y: any) => y.year === year);
+                        if (profitYear) {
+                            const yearProfit = profitYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+                            zoneWiseData[zoneName][year].totalProfit += yearProfit;
+                        }
+                    });
+                });
+
+                // ===== CALCULATE ZONE-WISE FINANCIALS FOR CHART =====
+                const currentYear = 2025; // You can make this dynamic
+                const zoneFinancials = calculateZoneWiseFinancials(financeBranches, branches, currentYear);
+
+                // Prepare data for ZoneBar chart
+                const zoneCategories = zoneFinancials.map((z) => z.zoneName);
+                const zoneIncome = zoneFinancials.map((z) => z.totalIncome);
+                const zoneExpense = zoneFinancials.map((z) => z.totalExpense);
+                const zoneProfit = zoneFinancials.map((z) => z.totalProfit);
+
+                // ===== PROCESS FINANCE DATA FOR CHARTS =====
+                const processed = processFinanceData(financeBranches);
+                setFinanceData(processed);
+
+                // Set initial year
+                if (processed.years.length > 0) {
+                    const latestYear = processed.years[0];
+                    setSelectedYear(latestYear);
+                    updateChartForYear(latestYear, processed);
+                }
+
+                // ===== STORE ALL CALCULATED METRICS =====
+                const calculatedMetrics = {
+                    totalUniqueZones,
+                    years,
+                    yearWiseTotals,
+                    zoneWiseData,
+                    zoneFinancials,
+                    zoneChartData: {
+                        categories: zoneCategories,
+                        income: zoneIncome,
+                        expense: zoneExpense,
+                        profit: zoneProfit,
+                    },
+                    branches: financeBranches,
+                    systemBranches: branches,
+                };
+
+                setDashboardMetrics(calculatedMetrics);
+                console.log('Calculated Metrics:', calculatedMetrics);
+                console.log('Zone Financials:', zoneFinancials);
+
+                setDashboardMetrics(calculatedMetrics);
+
+                // ---------- SET INITIAL SUMMARY YEAR DATA ----------
+                if (years.length > 0) {
+                    const latestYear = years[0].toString();
+                    setSelectedSummaryYear(latestYear);
+
+                    const latestYearData = yearWiseTotals[latestYear];
+                    if (latestYearData) {
+                        setFinanceTotals({
+                            revenue: latestYearData.totalIncome,
+                            cost: latestYearData.totalExpense,
+                            profit: latestYearData.totalProfit,
+                            profitMargin: latestYearData.totalIncome > 0 ? ((latestYearData.totalProfit / latestYearData.totalIncome) * 100).toFixed(2) : '0.00',
+                        });
+                    }
+                }
+
+                // ===== UPDATE STAT CARDS =====
                 const updatedStats: StatCardData[] = [
                     {
                         title: 'Total Zones',
@@ -124,27 +338,6 @@ export default function MainDashboard() {
             setStats(getDefaultStats());
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchFinanceData = async () => {
-        try {
-            const response = await getFinanceSummary(null, '');
-
-            if (response.success && response.data.branches) {
-                // Process the raw data
-                const processed = processFinanceData(response.data.branches);
-                setFinanceData(processed);
-
-                // Set initial year
-                if (processed.years.length > 0) {
-                    const latestYear = processed.years[0];
-                    setSelectedYear(latestYear);
-                    updateChartForYear(latestYear, processed);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch finance data:', error);
         }
     };
 
@@ -228,9 +421,21 @@ export default function MainDashboard() {
         console.log('Table delete action');
     }
 
+    // Handle zone click - navigate to zone dashboard
+    const handleZoneClick = (row: TableRow, columnKey: string) => {
+        if (columnKey === 'zone') {
+            const zoneName = row.zone as string;
+            // Convert zone name to URL-friendly format
+            const zoneSlug = zoneName.toLowerCase().replace(/\s+/g, '-');
+
+            // Navigate to zone-specific dashboard
+            router.push(`/dashboard/zone/${encodeURIComponent(zoneSlug)}?name=${encodeURIComponent(zoneName)}`);
+        }
+    };
+
     // DataTable configuration
     const outstandingAmountColumns: TableColumn[] = [
-        { key: 'zone', label: 'Zone', align: 'left', width: '200px' },
+        { key: 'zone', label: 'Zone', align: 'left', width: '200px', clickable: true },
         { key: 'monthLabel', label: '(Month/Outstanding Amount)', align: 'center', width: '200px' },
         { key: 'january', label: 'January', align: 'center' },
         { key: 'february', label: 'February', align: 'center' },
@@ -418,6 +623,10 @@ export default function MainDashboard() {
                         <div className="lg:col-span-2">
                             <SummaryBar
                                 title="Financial Summary"
+                                showYearFilter={true}
+                                yearOptions={dashboardMetrics?.years.map(String) || []}
+                                selectedYear={selectedSummaryYear}
+                                onYearSelect={handleSummaryYearChange}
                                 items={[
                                     {
                                         icon: <IconInbox />,
@@ -454,6 +663,44 @@ export default function MainDashboard() {
                                     console.log('Selected:', option);
                                 }}
                             />
+                            {/* <SummaryBar
+                                title="Financial Summary"
+                                items={[
+                                    {
+                                        icon: <IconInbox />,
+                                        label: 'Income',
+                                        value: formatCurrency(financeTotals.revenue),
+                                        percentage: 92,
+                                        gradientFrom: '#7579ff',
+                                        gradientTo: '#b224ef',
+                                        iconBgColor: 'bg-secondary-light dark:bg-secondary',
+                                        iconTextColor: 'text-secondary dark:text-secondary-light',
+                                    },
+                                    {
+                                        icon: <IconTag />,
+                                        label: 'Profit',
+                                        value: formatCurrency(financeTotals.profit),
+                                        percentage: 65,
+                                        gradientFrom: '#3cba92',
+                                        gradientTo: '#0ba360',
+                                        iconBgColor: 'bg-success-light dark:bg-success',
+                                        iconTextColor: 'text-success dark:text-success-light',
+                                    },
+                                    {
+                                        icon: <IconCreditCard />,
+                                        label: 'Expenses',
+                                        value: formatCurrency(financeTotals.cost),
+                                        percentage: 80,
+                                        gradientFrom: '#f09819',
+                                        gradientTo: '#ff5858',
+                                        iconBgColor: 'bg-warning-light dark:bg-warning',
+                                        iconTextColor: 'text-warning dark:text-warning-light',
+                                    },
+                                ]}
+                                onDropdownSelect={(option) => {
+                                    console.log('Selected:', option);
+                                }}
+                            /> */}
                         </div>
 
                         <div className="lg:col-span-1">
@@ -480,21 +727,39 @@ export default function MainDashboard() {
 
                     {/* Row 5 - Zone Bar Chart */}
                     <div className="mb-6">
-                        <ZoneBar
-                            chartTitle="Total Income Breakdown By Zone"
-                            series={[
-                                { name: 'PNL', data: [10000, 20000, 50000, -30000, 60000] },
-                                { name: 'INCOME', data: [20000, 30000, 25000, 40000, 39000] },
-                                { name: 'EXPENSE', data: [20000, 300000, 2500, 40000, 39000] },
-                            ]}
-                            categories={['Azz Delight', 'Hill Dark', 'Puncak Alam', 'Setia Alam', 'Transit']}
-                            colors={['#6225C7', '#FEBD4A', '#21C72F']}
-                            negativeColor="#FF4757"
-                            onDropdownSelect={(option) => console.log(option)}
-                        />
+                        {dashboardMetrics?.zoneChartData ? (
+                            <ZoneBar
+                                chartTitle="Total Income Breakdown By Zone (2025)"
+                                series={[
+                                    {
+                                        name: 'INCOME',
+                                        data: dashboardMetrics.zoneChartData.income,
+                                    },
+                                    {
+                                        name: 'EXPENSE',
+                                        data: dashboardMetrics.zoneChartData.expense,
+                                    },
+                                    {
+                                        name: 'PROFIT',
+                                        data: dashboardMetrics.zoneChartData.profit,
+                                    },
+                                ]}
+                                categories={dashboardMetrics.zoneChartData.categories}
+                                colors={['#10b981', '#ef4444', '#8b5cf6']}
+                                negativeColor="#FF4757"
+                                onDropdownSelect={(option) => console.log(option)}
+                            />
+                        ) : (
+                            <div className="panel p-5">
+                                <div className="flex items-center justify-center">
+                                    <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></span>
+                                    <span className="ml-3">Loading zone data...</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Row 6 - Table Data */}
+                    {/* Row 6 - Table Data with Clickable Zones */}
                     <div className="mb-6">
                         <DataTable
                             columns={outstandingAmountColumns}
@@ -505,6 +770,7 @@ export default function MainDashboard() {
                             onViewReport={handleTableView}
                             onEditReport={handleTableView}
                             onDeleteReport={handleTableDelete}
+                            onCellClick={handleZoneClick}
                         />
                     </div>
 
