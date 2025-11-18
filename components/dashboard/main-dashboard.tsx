@@ -17,25 +17,53 @@ import ZoneBar from '../widgets/Zone-bar';
 import OutstandingAmountChart from '../widgets/main-dashboard/sales/Amount-zone-chart';
 import { StatCardData, StatsGrid } from '../widgets/main-dashboard/stat-card/StatCard';
 import { DataTable, DataTableConfig, TableColumn, TableRow } from '../widgets/main-dashboard/table-data/TableData';
-import IconUser from '../icon/icon-user';
 import Image from 'next/image';
-import { dashboardService } from '@/services/sales/salesService';
+import {
+    getFinanceSummary,
+    processFinanceData,
+    getChartSeriesForYear,
+    calculateYearTotals,
+    formatCurrency,
+    dashboardService,
+    ProcessedFinanceData,
+    ChartSeriesData,
+} from '@/services/sales/salesService';
 
 export default function MainDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
     const [isMounted, setIsMounted] = useState(false);
 
+    // System Info State
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<StatCardData[]>([]);
+
+    // Finance Data State
+    const [financeData, setFinanceData] = useState<ProcessedFinanceData | null>(null);
+    const [selectedYear, setSelectedYear] = useState<string>('2022');
+    const [chartSeries, setChartSeries] = useState<ChartSeriesData[]>([]);
+    const [financeTotals, setFinanceTotals] = useState({
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+        profitMargin: '0.00',
+    });
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState<StatCardData[]>([]);
-
     useEffect(() => {
         fetchDashboardData();
+        fetchFinanceData();
     }, []);
+
+    // Update chart when year changes
+    useEffect(() => {
+        if (financeData && selectedYear) {
+            updateChartForYear(selectedYear);
+        }
+    }, [selectedYear, financeData]);
 
     const fetchDashboardData = async () => {
         try {
@@ -46,12 +74,17 @@ export default function MainDashboard() {
             // Check if response has the expected structure
             if (response?.data?.systemInfo) {
                 const systemInfo = response.data.systemInfo;
+                const branches = response.data.branches || [];
+
+                // Count unique zones (exclude empty zones)
+                const uniqueZones = new Set(branches.map((branch: any) => branch.zone).filter((zone: string) => zone && zone.trim() !== ''));
+                const totalUniqueZones = uniqueZones.size;
 
                 // Update stats with API data
                 const updatedStats: StatCardData[] = [
                     {
                         title: 'Total Zones',
-                        value: systemInfo.totalBranch?.toString() || '0',
+                        value: totalUniqueZones.toString(),
                         valueSize: 'xl',
                         gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
                         iconSize: 'xl',
@@ -92,6 +125,44 @@ export default function MainDashboard() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchFinanceData = async () => {
+        try {
+            const response = await getFinanceSummary(null, '');
+
+            if (response.success && response.data.branches) {
+                // Process the raw data
+                const processed = processFinanceData(response.data.branches);
+                setFinanceData(processed);
+
+                // Set initial year
+                if (processed.years.length > 0) {
+                    const latestYear = processed.years[0];
+                    setSelectedYear(latestYear);
+                    updateChartForYear(latestYear, processed);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch finance data:', error);
+        }
+    };
+
+    const updateChartForYear = (year: string, data: ProcessedFinanceData | null = null) => {
+        const processedData = data || financeData;
+        if (!processedData) return;
+
+        // Get chart series for the selected year (Revenue and Cost)
+        const series = getChartSeriesForYear(processedData, year, true, true, false);
+        setChartSeries(series);
+
+        // Calculate totals
+        const totals = calculateYearTotals(processedData, year);
+        setFinanceTotals(totals);
+    };
+
+    const handleYearChange = (year: string) => {
+        setSelectedYear(year);
     };
 
     // Default stats function for fallback
@@ -142,310 +213,19 @@ export default function MainDashboard() {
     const handleViewReport = (index: number) => {
         const stat = stats[index];
         console.log('View report for:', stat.title);
-        // Add your view report logic here
     };
 
     const handleEditReport = (index: number) => {
         const stat = stats[index];
         console.log('Edit report for:', stat.title);
-        // Add your edit report logic here
-    };
-
-    //Revenue Chart
-    const revenueChart: any = {
-        series: [
-            {
-                name: 'Income',
-                data: [1600000, 1800000, 2000000, 2200000, 2100000, 2500000, 2600000, 2400000, 2700000, 2800000, 3000000, 3100000],
-            },
-            {
-                name: 'Expenses',
-                data: [1400000, 1700000, 1900000, 2100000, 2000000, 2300000, 2400000, 2200000, 2600000, 2700000, 3000000, 3200000],
-            },
-        ],
-
-        options: {
-            chart: {
-                height: 325,
-                type: 'area',
-                fontFamily: 'Nunito, sans-serif',
-                zoom: {
-                    enabled: false,
-                },
-                toolbar: {
-                    show: false,
-                },
-            },
-
-            dataLabels: {
-                enabled: false,
-            },
-            stroke: {
-                show: true,
-                curve: 'smooth',
-                width: 2,
-                lineCap: 'square',
-            },
-            dropShadow: {
-                enabled: true,
-                opacity: 0.2,
-                blur: 10,
-                left: -7,
-                top: 22,
-            },
-            colors: isDark ? ['#2196F3', '#E7515A'] : ['#1B55E2', '#E7515A'],
-            markers: {
-                discrete: [
-                    {
-                        seriesIndex: 0,
-                        dataPointIndex: 6,
-                        fillColor: '#1B55E2',
-                        strokeColor: 'transparent',
-                        size: 7,
-                    },
-                    {
-                        seriesIndex: 1,
-                        dataPointIndex: 5,
-                        fillColor: '#E7515A',
-                        strokeColor: 'transparent',
-                        size: 7,
-                    },
-                ],
-            },
-            labels: ['Jan-Apr', 'May-Aug', 'Sep-Dec', 'Jan-Apr', 'May-Aug', 'Sep-Dec', 'Jan-Apr', 'May-Aug', 'Sep-Dec', 'Jan-Aug', 'May-Aug', 'Sep-Dec'],
-            xaxis: {
-                axisBorder: {
-                    show: false,
-                },
-                axisTicks: {
-                    show: false,
-                },
-                crosshairs: {
-                    show: true,
-                },
-                labels: {
-                    offsetX: isRtl ? 2 : 0,
-                    offsetY: 5,
-                    style: {
-                        fontSize: '12px',
-                        cssClass: 'apexcharts-xaxis-title',
-                    },
-                },
-            },
-            yaxis: {
-                min: 1000000,
-                max: 7000000,
-                tickAmount: 6,
-                labels: {
-                    formatter: (value: number) => {
-                        return value / 1000000 + 'M';
-                    },
-                    offsetX: isRtl ? -30 : -10,
-                    offsetY: 0,
-                    style: {
-                        fontSize: '12px',
-                        cssClass: 'apexcharts-yaxis-title',
-                    },
-                },
-                opposite: isRtl ? true : false,
-            },
-            grid: {
-                borderColor: isDark ? '#191E3A' : '#E0E6ED',
-                strokeDashArray: 5,
-                xaxis: {
-                    lines: {
-                        show: false,
-                    },
-                },
-                yaxis: {
-                    lines: {
-                        show: true,
-                    },
-                },
-                padding: {
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            legend: {
-                position: 'top',
-                horizontalAlign: 'right',
-                fontSize: '16px',
-                markers: {
-                    width: 10,
-                    height: 10,
-                    offsetX: -2,
-                },
-                itemMargin: {
-                    horizontal: 10,
-                    vertical: 5,
-                },
-            },
-            tooltip: {
-                marker: {
-                    show: true,
-                },
-                x: {
-                    show: false,
-                },
-            },
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    inverseColors: !1,
-                    opacityFrom: isDark ? 0.19 : 0.28,
-                    opacityTo: 0.05,
-                    stops: isDark ? [100, 100] : [45, 100],
-                },
-            },
-        },
-    };
-
-    //Daily Sales
-    const dailySales: any = {
-        series: [
-            {
-                name: 'Sales',
-                data: [44, 55, 41, 67, 22, 43, 21],
-            },
-            {
-                name: 'Last Week',
-                data: [13, 23, 20, 8, 13, 27, 33],
-            },
-        ],
-        options: {
-            chart: {
-                height: 160,
-                type: 'bar',
-                fontFamily: 'Nunito, sans-serif',
-                toolbar: {
-                    show: false,
-                },
-                stacked: true,
-                stackType: '100%',
-            },
-            dataLabels: {
-                enabled: false,
-            },
-            stroke: {
-                show: true,
-                width: 1,
-            },
-            colors: ['#e2a03f', '#e0e6ed'],
-            responsive: [
-                {
-                    breakpoint: 480,
-                    options: {
-                        legend: {
-                            position: 'bottom',
-                            offsetX: -10,
-                            offsetY: 0,
-                        },
-                    },
-                },
-            ],
-            xaxis: {
-                labels: {
-                    show: false,
-                },
-                categories: ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'],
-            },
-            yaxis: {
-                show: false,
-            },
-            fill: {
-                opacity: 1,
-            },
-            plotOptions: {
-                bar: {
-                    horizontal: false,
-                    columnWidth: '25%',
-                },
-            },
-            legend: {
-                show: false,
-            },
-            grid: {
-                show: false,
-                xaxis: {
-                    lines: {
-                        show: false,
-                    },
-                },
-                padding: {
-                    top: 10,
-                    right: -20,
-                    bottom: -20,
-                    left: -20,
-                },
-            },
-        },
-    };
-
-    //Total Orders
-    const totalOrders: any = {
-        series: [
-            {
-                name: 'Sales',
-                data: [28, 40, 36, 52, 38, 60, 38, 52, 36, 40],
-            },
-        ],
-        options: {
-            chart: {
-                height: 290,
-                type: 'area',
-                fontFamily: 'Nunito, sans-serif',
-                sparkline: {
-                    enabled: true,
-                },
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 2,
-            },
-            colors: isDark ? ['#00ab55'] : ['#00ab55'],
-            labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
-            yaxis: {
-                min: 0,
-                show: false,
-            },
-            grid: {
-                padding: {
-                    top: 125,
-                    right: 0,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-            fill: {
-                opacity: 1,
-                type: 'gradient',
-                gradient: {
-                    type: 'vertical',
-                    shadeIntensity: 1,
-                    inverseColors: !1,
-                    opacityFrom: 0.3,
-                    opacityTo: 0.05,
-                    stops: [100, 100],
-                },
-            },
-            tooltip: {
-                x: {
-                    show: false,
-                },
-            },
-        },
     };
 
     function handleTableView(): void {
-        throw new Error('Function not implemented.');
+        console.log('Table view action');
     }
 
     function handleTableDelete(): void {
-        throw new Error('Function not implemented.');
+        console.log('Table delete action');
     }
 
     // DataTable configuration
@@ -551,29 +331,31 @@ export default function MainDashboard() {
                 </ul>
 
                 <div className="pt-5">
-                    {/* 1st row - KPI Cards with improved tablet responsiveness */}
+                    {/* 1st row - KPI Cards */}
                     <StatsGrid stats={stats} isRtl={isRtl} onViewReport={handleViewReport} onEditReport={handleEditReport} />
 
-                    {/* Row 2 - Charts with better tablet layout */}
+                    {/* Row 2 - Charts with Finance Data from API */}
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
                         <div className="lg:col-span-2">
                             <AreaChart
                                 title="Income"
-                                subtitle="Total Income"
-                                subtitleValue="RM 6.1M"
-                                series={[
-                                    {
-                                        name: 'Income',
-                                        data: [1600000, 1800000, 2000000, 2200000, 2100000, 2500000, 2600000, 2400000, 2700000, 2800000, 3000000, 3100000],
-                                    },
-                                    {
-                                        name: 'Expenses',
-                                        data: [1400000, 1700000, 1900000, 2100000, 2000000, 2300000, 2400000, 2200000, 2600000, 2700000, 3000000, 3200000],
-                                    },
-                                ]}
+                                subtitle="Total Revenue"
+                                subtitleValue={formatCurrency(financeTotals.revenue)}
+                                showYearFilter={true}
+                                yearOptions={financeData?.years || []}
+                                showDropdown={false}
+                                series={chartSeries}
                                 labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
                                 height={325}
-                                yAxisFormatter={(value: number) => value / 1000000 + 'M'}
+                                onYearSelect={handleYearChange}
+                                yAxisFormatter={(value: number) => {
+                                    if (value >= 1000000) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    } else if (value >= 1000) {
+                                        return (value / 1000).toFixed(0) + 'K';
+                                    }
+                                    return value.toFixed(0);
+                                }}
                             />
                         </div>
 
@@ -592,7 +374,7 @@ export default function MainDashboard() {
                         </div>
                     </div>
 
-                    {/* Row 3 - Three pie charts with tablet responsiveness */}
+                    {/* Row 3 - Three pie charts */}
                     <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         <BasicPieChart
                             chartTitle="Financial Component Breakdown"
@@ -640,7 +422,7 @@ export default function MainDashboard() {
                                     {
                                         icon: <IconInbox />,
                                         label: 'Income',
-                                        value: 'RM 6.1M',
+                                        value: formatCurrency(financeTotals.revenue),
                                         percentage: 92,
                                         gradientFrom: '#7579ff',
                                         gradientTo: '#b224ef',
@@ -650,7 +432,7 @@ export default function MainDashboard() {
                                     {
                                         icon: <IconTag />,
                                         label: 'Profit',
-                                        value: 'RM 1.3M',
+                                        value: formatCurrency(financeTotals.profit),
                                         percentage: 65,
                                         gradientFrom: '#3cba92',
                                         gradientTo: '#0ba360',
@@ -660,7 +442,7 @@ export default function MainDashboard() {
                                     {
                                         icon: <IconCreditCard />,
                                         label: 'Expenses',
-                                        value: 'RM 4.8M',
+                                        value: formatCurrency(financeTotals.cost),
                                         percentage: 80,
                                         gradientFrom: '#f09819',
                                         gradientTo: '#ff5858',
