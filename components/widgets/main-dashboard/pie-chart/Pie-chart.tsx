@@ -17,6 +17,10 @@ interface PieChartProps {
     showDropdown?: boolean;
     dropdownOptions?: string[];
     onDropdownSelect?: (option: string) => void;
+    showYearFilter?: boolean;
+    yearOptions?: string[];
+    selectedYear?: string;
+    onYearChange?: (year: string) => void;
 }
 
 export default function PieChart({
@@ -29,6 +33,10 @@ export default function PieChart({
     showDropdown = true,
     dropdownOptions = ['View Report', 'Export Data', 'Edit Chart'],
     onDropdownSelect,
+    showYearFilter = false,
+    yearOptions = [],
+    selectedYear,
+    onYearChange,
 }: PieChartProps) {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
@@ -109,12 +117,13 @@ export default function PieChart({
                                   },
                                   total: {
                                       show: true,
-                                      label: 'Category',
+                                      label: 'Total',
                                       fontSize: '16px',
                                       fontWeight: 600,
                                       color: isDark ? '#bfc9d4' : '#111827',
                                       formatter: (w: any) => {
-                                          return '';
+                                          const total = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
+                                          return `RM ${total.toLocaleString()}`;
                                       },
                                   },
                               },
@@ -134,6 +143,11 @@ export default function PieChart({
                 },
             },
         },
+        tooltip: {
+            y: {
+                formatter: (val: number) => `RM ${val.toLocaleString()}`,
+            },
+        },
     };
 
     const handleDropdownSelect = (option: string) => {
@@ -142,11 +156,46 @@ export default function PieChart({
         }
     };
 
+    const handleYearChange = (year: string) => {
+        if (onYearChange) {
+            onYearChange(year);
+        }
+    };
+
     return (
         <div className="panel h-full">
             <div className="mb-5 flex items-center justify-between dark:text-white-light">
-                <h5 className="text-lg font-semibold">{title}</h5>
-                {showDropdown && (
+                <div className="flex items-center gap-3">
+                    <h5 className="text-lg font-semibold">{title}</h5>
+                    {showYearFilter && yearOptions.length > 0 && (
+                        <div className="dropdown">
+                            <Dropdown
+                                offset={[0, 5]}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                btnClassName="btn btn-sm btn-outline-primary dropdown-toggle"
+                                button={
+                                    <span className="flex items-center">
+                                        {selectedYear || 'Select Year'}
+                                        <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                }
+                            >
+                                <ul className="max-h-60 overflow-y-auto">
+                                    {yearOptions.map((year) => (
+                                        <li key={year}>
+                                            <button type="button" onClick={() => handleYearChange(year)} className={`w-full ${selectedYear === year ? 'bg-primary/10 text-primary' : ''}`}>
+                                                {year}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Dropdown>
+                        </div>
+                    )}
+                </div>
+                {showDropdown && dropdownOptions.length > 0 && (
                     <div className="dropdown">
                         <Dropdown
                             offset={[0, 1]}

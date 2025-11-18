@@ -25,7 +25,7 @@ interface MonthlyRecord {
     categories?: CategoryData[];
 }
 
-interface CategoryData {
+export interface CategoryData {
     code: string;
     name: string;
     total: number;
@@ -100,6 +100,25 @@ export interface ZoneFinancialSummary {
     totalIncome: number;
     totalExpense: number;
     totalProfit: number;
+}
+
+// Category Data Interfaces
+export interface MonthlyRecordWithCategories {
+    month: number;
+    total: number;
+    categories: CategoryData[];
+}
+
+export interface YearlyRevenue {
+    year: string;
+    total: number;
+    records: MonthlyRecordWithCategories[];
+}
+
+export interface BranchData {
+    branchId: number;
+    name: string;
+    monthly_revenue: YearlyRevenue[];
 }
 
 // ===== DASHBOARD SERVICE FUNCTIONS =====
@@ -508,10 +527,160 @@ export const getZoneChartSeries = (
     };
 };
 
+// ===== CATEGORY DATA FUNCTIONS =====
+
+/**
+ * Process category totals for a specific year across all branches
+ */
+export const processCategoryTotalsForYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
+    const categoryTotals: Map<string, { name: string; total: number }> = new Map();
+
+    branches.forEach((branch) => {
+        const yearData = branch.monthly_revenue?.find((yr: any) => yr.year.toString() === year);
+
+        if (yearData) {
+            yearData.records?.forEach((record: any) => {
+                record.categories?.forEach((category: any) => {
+                    const existing = categoryTotals.get(category.code);
+                    if (existing) {
+                        existing.total += category.total;
+                    } else {
+                        categoryTotals.set(category.code, {
+                            name: category.name,
+                            total: category.total,
+                        });
+                    }
+                });
+            });
+        }
+    });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedCategories = Array.from(categoryTotals.entries())
+        .map(([code, data]) => ({
+            code,
+            name: data.name,
+            total: data.total,
+        }))
+        .filter((cat) => cat.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedCategories.map((cat) => cat.name),
+        series: sortedCategories.map((cat) => cat.total),
+    };
+};
+
+/**
+ * Process category totals for a specific zone and year
+ */
+export const processCategoryTotalsForZone = (branches: any[], zoneName: string, year: string): { labels: string[]; series: number[] } => {
+    const categoryTotals: Map<string, { name: string; total: number }> = new Map();
+
+    branches
+        .filter((branch: any) => branch.name.toLowerCase().includes(zoneName.toLowerCase()))
+        .forEach((branch: any) => {
+            const yearData = branch.monthly_revenue?.find((yr: any) => yr.year.toString() === year);
+
+            if (yearData) {
+                yearData.records?.forEach((record: any) => {
+                    record.categories?.forEach((category: any) => {
+                        const existing = categoryTotals.get(category.code);
+                        if (existing) {
+                            existing.total += category.total;
+                        } else {
+                            categoryTotals.set(category.code, {
+                                name: category.name,
+                                total: category.total,
+                            });
+                        }
+                    });
+                });
+            }
+        });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedCategories = Array.from(categoryTotals.entries())
+        .map(([code, data]) => ({
+            code,
+            name: data.name,
+            total: data.total,
+        }))
+        .filter((cat) => cat.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedCategories.map((cat) => cat.name),
+        series: sortedCategories.map((cat) => cat.total),
+    };
+};
+
+/**
+ * Get all available years from the data
+ */
+export const getAvailableYears = (branches: any[]): string[] => {
+    const years = new Set<string>();
+
+    branches.forEach((branch: any) => {
+        branch.monthly_revenue?.forEach((yearData: any) => {
+            if (yearData.year && yearData.total > 0) {
+                years.add(yearData.year.toString());
+            }
+        });
+    });
+
+    return Array.from(years).sort((a, b) => b.localeCompare(a)); // Sort descending
+};
+
+/**
+ * Process zone-wise totals for a specific year
+ */
+export const processZoneTotalsForYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
+    const zoneTotals: Map<string, number> = new Map();
+
+    branches.forEach((branch: any) => {
+        const yearData = branch.monthly_revenue?.find((yr: any) => yr.year.toString() === year);
+
+        if (yearData && yearData.total > 0) {
+            // Extract zone name from branch name
+            const zoneName = extractZoneName(branch.name);
+            const existing = zoneTotals.get(zoneName) || 0;
+            zoneTotals.set(zoneName, existing + yearData.total);
+        }
+    });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedZones = Array.from(zoneTotals.entries())
+        .map(([zone, total]) => ({ zone, total }))
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedZones.map((z) => z.zone),
+        series: sortedZones.map((z) => z.total),
+    };
+};
+
+/**
+ * Extract zone name from branch name
+ */
+const extractZoneName = (branchName: string): string => {
+    const zones = ['PUNCAK ALAM', 'HILLPARK', 'SETIA ALAM', 'TRANSIT', 'DENGKIL'];
+
+    const upperBranchName = branchName.toUpperCase();
+    for (const zone of zones) {
+        if (upperBranchName.includes(zone)) {
+            return zone;
+        }
+    }
+
+    return 'OTHER';
+};
+
 // ===== UTILITY FUNCTIONS =====
 
 /**
  * Format currency for display
+ * This is the single, consolidated formatCurrency function
  */
 export const formatCurrency = (value: number, locale: string = 'en-MY'): string => {
     return `RM ${value.toLocaleString(locale, {

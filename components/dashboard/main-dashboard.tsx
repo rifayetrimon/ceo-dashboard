@@ -31,6 +31,60 @@ import {
     calculateZoneWiseFinancials,
 } from '@/services/sales/salesService';
 
+// Category Data Processing Functions
+const processCategoryTotalsForYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
+    const categoryTotals: Map<string, { name: string; total: number }> = new Map();
+
+    branches.forEach((branch) => {
+        const yearData = branch.monthly_revenue?.find((yr: any) => yr.year.toString() === year);
+
+        if (yearData) {
+            yearData.records.forEach((record: any) => {
+                record.categories?.forEach((category: any) => {
+                    const existing = categoryTotals.get(category.code);
+                    if (existing) {
+                        existing.total += category.total;
+                    } else {
+                        categoryTotals.set(category.code, {
+                            name: category.name,
+                            total: category.total,
+                        });
+                    }
+                });
+            });
+        }
+    });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedCategories = Array.from(categoryTotals.entries())
+        .map(([code, data]) => ({
+            code,
+            name: data.name,
+            total: data.total,
+        }))
+        .filter((cat) => cat.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedCategories.map((cat) => cat.name),
+        series: sortedCategories.map((cat) => cat.total),
+    };
+};
+
+const getAvailableYears = (branches: any[]): string[] => {
+    const years = new Set<string>();
+
+    branches.forEach((branch) => {
+        branch.monthly_revenue?.forEach((yearData: any) => {
+            if (yearData.year && yearData.total > 0) {
+                years.add(yearData.year.toString());
+            }
+        });
+    });
+
+    return Array.from(years).sort((a, b) => b.localeCompare(a)); // Sort descending
+};
+
 export default function MainDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
@@ -46,10 +100,17 @@ export default function MainDashboard() {
     const [financeData, setFinanceData] = useState<ProcessedFinanceData | null>(null);
     const [selectedYear, setSelectedYear] = useState<string>('2025');
     const [chartSeries, setChartSeries] = useState<ChartSeriesData[]>([]);
-    // SummaryBar selected year
     const [selectedSummaryYear, setSelectedSummaryYear] = useState<string>('2025');
-    // Add this state near the top with other states
     const [selectedZoneYear, setSelectedZoneYear] = useState<number>(new Date().getFullYear());
+
+    // Category Chart State
+    const [categoryChartData, setCategoryChartData] = useState<{
+        labels: string[];
+        series: number[];
+    }>({ labels: [], series: [] });
+    const [categorySelectedYear, setCategorySelectedYear] = useState<string>('2025');
+    const [availableYears, setAvailableYears] = useState<string[]>([]);
+    const [rawBranchData, setRawBranchData] = useState<any[]>([]);
 
     const [financeTotals, setFinanceTotals] = useState({
         revenue: 0,
@@ -102,6 +163,9 @@ export default function MainDashboard() {
                 const systemInfo = systemInfoResponse.data.systemInfo;
                 const branches = systemInfoResponse.data.branches || [];
                 const financeBranches = financeSummaryResponse.data.branches || [];
+
+                // Store raw branch data for category processing
+                setRawBranchData(financeBranches);
 
                 // ===== CALCULATE UNIQUE ZONES =====
                 const uniqueZones = new Set(branches.map((branch: any) => branch.zone).filter((zone: string) => zone && zone.trim() !== ''));
@@ -172,71 +236,9 @@ export default function MainDashboard() {
                     });
                 });
 
-                // ===== CALCULATE ZONE-WISE TOTALS =====
-                const zoneWiseData: {
-                    [zoneName: string]: {
-                        [year: string]: {
-                            totalIncome: number;
-                            totalExpense: number;
-                            totalProfit: number;
-                            branches: string[];
-                        };
-                    };
-                } = {};
-
-                // Map branchId to zone from system info
-                const branchZoneMap: { [branchId: number]: string } = {};
-                branches.forEach((branch: any) => {
-                    if (branch.zone && branch.zone.trim() !== '') {
-                        branchZoneMap[branch.branchId] = branch.zoneName || branch.zone;
-                    }
-                });
-
-                // Calculate zone-wise totals
-                financeBranches.forEach((branch: any) => {
-                    const zoneName = branchZoneMap[branch.branchId] || 'Unknown Zone';
-
-                    if (!zoneWiseData[zoneName]) {
-                        zoneWiseData[zoneName] = {};
-                    }
-
-                    years.forEach((year) => {
-                        if (!zoneWiseData[zoneName][year]) {
-                            zoneWiseData[zoneName][year] = {
-                                totalIncome: 0,
-                                totalExpense: 0,
-                                totalProfit: 0,
-                                branches: [],
-                            };
-                        }
-
-                        // Add branch name if not already added
-                        if (!zoneWiseData[zoneName][year].branches.includes(branch.name)) {
-                            zoneWiseData[zoneName][year].branches.push(branch.name);
-                        }
-
-                        // Calculate revenue
-                        const revenueYear = branch.monthly_revenue?.find((y: any) => y.year === year);
-                        if (revenueYear) {
-                            const yearRevenue = revenueYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
-                            zoneWiseData[zoneName][year].totalIncome += yearRevenue;
-                        }
-
-                        // Calculate cost
-                        const costYear = branch.monthly_cost?.find((y: any) => y.year === year);
-                        if (costYear) {
-                            const yearCost = costYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
-                            zoneWiseData[zoneName][year].totalExpense += yearCost;
-                        }
-
-                        // Calculate profit
-                        const profitYear = branch.monthly_profit?.find((y: any) => y.year === year);
-                        if (profitYear) {
-                            const yearProfit = profitYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
-                            zoneWiseData[zoneName][year].totalProfit += yearProfit;
-                        }
-                    });
-                });
+                // ===== GET AVAILABLE YEARS FOR CATEGORY CHART =====
+                const categoryYears = getAvailableYears(financeBranches);
+                setAvailableYears(categoryYears);
 
                 // ===== CALCULATE ZONE-WISE FINANCIALS FOR CHART =====
                 const currentYear = years.length > 0 ? years[0] : new Date().getFullYear();
@@ -261,12 +263,18 @@ export default function MainDashboard() {
                     updateChartForYear(latestYear, processed);
                 }
 
+                // ===== UPDATE CATEGORY CHART =====
+                if (categoryYears.length > 0) {
+                    const latestYear = categoryYears[0];
+                    setCategorySelectedYear(latestYear);
+                    updateCategoryChart(financeBranches, latestYear);
+                }
+
                 // ===== STORE ALL CALCULATED METRICS =====
                 const calculatedMetrics = {
                     totalUniqueZones,
                     years,
                     yearWiseTotals,
-                    zoneWiseData,
                     zoneFinancials,
                     zoneChartData: {
                         categories: zoneCategories,
@@ -280,9 +288,6 @@ export default function MainDashboard() {
 
                 setDashboardMetrics(calculatedMetrics);
                 console.log('Calculated Metrics:', calculatedMetrics);
-                console.log('Zone Financials:', zoneFinancials);
-
-                setDashboardMetrics(calculatedMetrics);
 
                 // ---------- SET INITIAL SUMMARY YEAR DATA ----------
                 if (years.length > 0) {
@@ -364,6 +369,40 @@ export default function MainDashboard() {
         setSelectedYear(year);
     };
 
+    const updateCategoryChart = (branches: any[], year: string) => {
+        const categoryData = processCategoryTotalsForYear(branches, year);
+        setCategoryChartData(categoryData);
+    };
+
+    const handleCategoryYearChange = (year: string) => {
+        setCategorySelectedYear(year);
+        updateCategoryChart(rawBranchData, year);
+    };
+
+    const handleZoneYearChange = (year: string) => {
+        const yearNum = parseInt(year);
+        setSelectedZoneYear(yearNum);
+
+        // Recalculate zone financials for the selected year
+        if (dashboardMetrics?.branches && dashboardMetrics?.systemBranches) {
+            const zoneFinancials = calculateZoneWiseFinancials(dashboardMetrics.branches, dashboardMetrics.systemBranches, yearNum);
+
+            // Update zone chart data
+            const updatedZoneChartData = {
+                categories: zoneFinancials.map((z) => z.zoneName),
+                income: zoneFinancials.map((z) => z.totalIncome),
+                expense: zoneFinancials.map((z) => z.totalExpense),
+                profit: zoneFinancials.map((z) => z.totalProfit),
+            };
+
+            // Update dashboard metrics with new zone data
+            setDashboardMetrics((prev: any) => ({
+                ...prev,
+                zoneChartData: updatedZoneChartData,
+            }));
+        }
+    };
+
     // Default stats function for fallback
     const getDefaultStats = (): StatCardData[] => [
         {
@@ -438,30 +477,7 @@ export default function MainDashboard() {
             router.push(`/dashboard/zone/${encodeURIComponent(zoneSlug)}?name=${encodeURIComponent(zoneName)}`);
         }
     };
-    // Add this handler after handleSummaryYearChange
-    const handleZoneYearChange = (year: string) => {
-        const yearNum = parseInt(year);
-        setSelectedZoneYear(yearNum);
 
-        // Recalculate zone financials for the selected year
-        if (dashboardMetrics?.branches && dashboardMetrics?.systemBranches) {
-            const zoneFinancials = calculateZoneWiseFinancials(dashboardMetrics.branches, dashboardMetrics.systemBranches, yearNum);
-
-            // Update zone chart data
-            const updatedZoneChartData = {
-                categories: zoneFinancials.map((z) => z.zoneName),
-                income: zoneFinancials.map((z) => z.totalIncome),
-                expense: zoneFinancials.map((z) => z.totalExpense),
-                profit: zoneFinancials.map((z) => z.totalProfit),
-            };
-
-            // Update dashboard metrics with new zone data
-            setDashboardMetrics((prev: any) => ({
-                ...prev,
-                zoneChartData: updatedZoneChartData,
-            }));
-        }
-    };
     // DataTable configuration
     const outstandingAmountColumns: TableColumn[] = [
         { key: 'zone', label: 'Zone', align: 'left', width: '200px', clickable: true },
@@ -594,12 +610,17 @@ export default function MainDashboard() {
                         </div>
 
                         <div className="lg:col-span-1">
+                            {/* Category PieChart with Year Filter */}
                             <PieChart
-                                title="Total Income Breakdown By Category(%)"
-                                series={[985, 737, 270, 450, 620]}
-                                labels={['Transit', 'Azz Delight', 'Hill Park', 'Setia Alam', 'Puncak Alam']}
+                                title="Revenue Distribution By Category"
+                                series={categoryChartData.series}
+                                labels={categoryChartData.labels}
                                 height={340}
-                                showDropdown={true}
+                                showDropdown={false}
+                                showYearFilter={true}
+                                yearOptions={availableYears}
+                                selectedYear={categorySelectedYear}
+                                onYearChange={handleCategoryYearChange}
                                 dropdownOptions={['View Report', 'Export Data', 'Share Chart']}
                                 onDropdownSelect={(option) => {
                                     console.log('Selected:', option);
@@ -638,7 +659,7 @@ export default function MainDashboard() {
                                 series={[985, 737, 270, 450, 620]}
                                 labels={['Transit', 'Azz Delight', 'Hill Park', 'Setia Alam', 'Puncak Alam']}
                                 height={340}
-                                showDropdown={true}
+                                showDropdown={false}
                                 dropdownOptions={['View Report', 'Export Data', 'Share Chart']}
                                 onDropdownSelect={(option) => {
                                     console.log('Selected:', option);
@@ -692,44 +713,6 @@ export default function MainDashboard() {
                                     console.log('Selected:', option);
                                 }}
                             />
-                            {/* <SummaryBar
-                                title="Financial Summary"
-                                items={[
-                                    {
-                                        icon: <IconInbox />,
-                                        label: 'Income',
-                                        value: formatCurrency(financeTotals.revenue),
-                                        percentage: 92,
-                                        gradientFrom: '#7579ff',
-                                        gradientTo: '#b224ef',
-                                        iconBgColor: 'bg-secondary-light dark:bg-secondary',
-                                        iconTextColor: 'text-secondary dark:text-secondary-light',
-                                    },
-                                    {
-                                        icon: <IconTag />,
-                                        label: 'Profit',
-                                        value: formatCurrency(financeTotals.profit),
-                                        percentage: 65,
-                                        gradientFrom: '#3cba92',
-                                        gradientTo: '#0ba360',
-                                        iconBgColor: 'bg-success-light dark:bg-success',
-                                        iconTextColor: 'text-success dark:text-success-light',
-                                    },
-                                    {
-                                        icon: <IconCreditCard />,
-                                        label: 'Expenses',
-                                        value: formatCurrency(financeTotals.cost),
-                                        percentage: 80,
-                                        gradientFrom: '#f09819',
-                                        gradientTo: '#ff5858',
-                                        iconBgColor: 'bg-warning-light dark:bg-warning',
-                                        iconTextColor: 'text-warning dark:text-warning-light',
-                                    },
-                                ]}
-                                onDropdownSelect={(option) => {
-                                    console.log('Selected:', option);
-                                }}
-                            /> */}
                         </div>
 
                         <div className="lg:col-span-1">
