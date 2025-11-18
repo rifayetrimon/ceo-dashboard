@@ -46,7 +46,11 @@ export default function MainDashboard() {
     const [financeData, setFinanceData] = useState<ProcessedFinanceData | null>(null);
     const [selectedYear, setSelectedYear] = useState<string>('2025');
     const [chartSeries, setChartSeries] = useState<ChartSeriesData[]>([]);
+    // SummaryBar selected year
     const [selectedSummaryYear, setSelectedSummaryYear] = useState<string>('2025');
+    // Add this state near the top with other states
+    const [selectedZoneYear, setSelectedZoneYear] = useState<number>(new Date().getFullYear());
+
     const [financeTotals, setFinanceTotals] = useState({
         revenue: 0,
         cost: 0,
@@ -235,7 +239,9 @@ export default function MainDashboard() {
                 });
 
                 // ===== CALCULATE ZONE-WISE FINANCIALS FOR CHART =====
-                const currentYear = 2025; // You can make this dynamic
+                const currentYear = years.length > 0 ? years[0] : new Date().getFullYear();
+                setSelectedZoneYear(currentYear);
+
                 const zoneFinancials = calculateZoneWiseFinancials(financeBranches, branches, currentYear);
 
                 // Prepare data for ZoneBar chart
@@ -432,7 +438,30 @@ export default function MainDashboard() {
             router.push(`/dashboard/zone/${encodeURIComponent(zoneSlug)}?name=${encodeURIComponent(zoneName)}`);
         }
     };
+    // Add this handler after handleSummaryYearChange
+    const handleZoneYearChange = (year: string) => {
+        const yearNum = parseInt(year);
+        setSelectedZoneYear(yearNum);
 
+        // Recalculate zone financials for the selected year
+        if (dashboardMetrics?.branches && dashboardMetrics?.systemBranches) {
+            const zoneFinancials = calculateZoneWiseFinancials(dashboardMetrics.branches, dashboardMetrics.systemBranches, yearNum);
+
+            // Update zone chart data
+            const updatedZoneChartData = {
+                categories: zoneFinancials.map((z) => z.zoneName),
+                income: zoneFinancials.map((z) => z.totalIncome),
+                expense: zoneFinancials.map((z) => z.totalExpense),
+                profit: zoneFinancials.map((z) => z.totalProfit),
+            };
+
+            // Update dashboard metrics with new zone data
+            setDashboardMetrics((prev: any) => ({
+                ...prev,
+                zoneChartData: updatedZoneChartData,
+            }));
+        }
+    };
     // DataTable configuration
     const outstandingAmountColumns: TableColumn[] = [
         { key: 'zone', label: 'Zone', align: 'left', width: '200px', clickable: true },
@@ -729,7 +758,7 @@ export default function MainDashboard() {
                     <div className="mb-6">
                         {dashboardMetrics?.zoneChartData ? (
                             <ZoneBar
-                                chartTitle="Total Income Breakdown By Zone (2025)"
+                                chartTitle={`Total Income Breakdown By Zone (${selectedZoneYear})`}
                                 series={[
                                     {
                                         name: 'INCOME',
@@ -747,6 +776,9 @@ export default function MainDashboard() {
                                 categories={dashboardMetrics.zoneChartData.categories}
                                 colors={['#10b981', '#ef4444', '#8b5cf6']}
                                 negativeColor="#FF4757"
+                                showYearFilter={true}
+                                yearOptions={dashboardMetrics?.years.map(String) || []}
+                                onYearSelect={handleZoneYearChange}
                                 onDropdownSelect={(option) => console.log(option)}
                             />
                         ) : (
