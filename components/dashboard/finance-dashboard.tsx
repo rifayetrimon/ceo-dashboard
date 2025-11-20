@@ -12,7 +12,6 @@ import { useSelector } from 'react-redux';
 import BasicPieChart from '../widgets/main-dashboard/basic-pie-chart/Basic-pie-chart';
 import PieChart from '../widgets/main-dashboard/pie-chart/Pie-chart';
 import AreaChart from '../widgets/main-dashboard/area-chart/Area-chart';
-import SummaryBar from '../widgets/SummaryBar';
 import GrossNetProfit from '../widgets/main-dashboard/sales/Gross-Net-profit';
 import ZoneBar from '../widgets/Zone-bar';
 import OutstandingAmountChart from '../widgets/main-dashboard/sales/Amount-zone-chart';
@@ -55,6 +54,107 @@ const getAvailableYears = (branches: any[]): string[] => {
     });
 
     return Array.from(years).sort((a, b) => b.localeCompare(a)); // Sort descending
+};
+
+/**
+ * Helper function to calculate outstanding amounts by zone
+ * NOTE: The implementation uses 'monthly_revenue' as a placeholder for
+ * 'outstanding amount' calculation, which may need adjustment based
+ * on the actual data structure for outstanding amounts.
+ */
+const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[], year: number) => {
+    const zoneMap = new Map<
+        string,
+        {
+            months: number[];
+            total: number;
+            color: string;
+        }
+    >();
+
+    // Define colors for zones
+    const colors = ['blue', 'purple', 'orange', 'green', 'red', 'cyan', 'pink', 'yellow'];
+    let colorIndex = 0;
+
+    // Group branches by zone
+    systemBranches.forEach((sysBranch: any) => {
+        const zoneName = sysBranch.zone?.trim();
+        if (!zoneName) return;
+        if (!zoneMap.has(zoneName)) {
+            zoneMap.set(zoneName, {
+                months: new Array(12).fill(0),
+                total: 0,
+                color: colors[colorIndex % colors.length],
+            });
+            colorIndex++;
+        }
+    });
+
+    // Calculate outstanding amounts (using revenue as placeholder)
+    branches.forEach((branch: any) => {
+        const sysBranch = systemBranches.find((sb: any) => sb._id === branch.branch_id);
+        if (!sysBranch?.zone) return;
+        const zoneName = sysBranch.zone.trim();
+        const zoneData = zoneMap.get(zoneName);
+        if (!zoneData) return;
+
+        // Find revenue data for the selected year
+        const yearRevenue = branch.monthly_revenue?.find((y: any) => y.year === year);
+        if (yearRevenue) {
+            yearRevenue.records.forEach((record: any) => {
+                const monthIndex = record.month - 1;
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    // Placeholder: Replace 'record.total' with the actual outstanding amount field
+                    zoneData.months[monthIndex] += record.total || 0;
+                }
+            });
+        }
+    });
+
+    // Convert to table data format (showing first 7 months)
+    const tableData: TableRow[] = [];
+    const monthTotals = new Array(8).fill(0); // 7 months + total
+
+    zoneMap.forEach((data, zoneName) => {
+        const rowTotal = data.months.slice(0, 7).reduce((sum, val) => sum + val, 0);
+        data.total = rowTotal;
+        const row: TableRow = {
+            zone: zoneName,
+            monthLabel: '',
+            january: data.months[0] > 0 ? `RM ${data.months[0].toLocaleString()}` : null,
+            february: data.months[1] > 0 ? `RM ${data.months[1].toLocaleString()}` : null,
+            march: data.months[2] > 0 ? `RM ${data.months[2].toLocaleString()}` : null,
+            april: data.months[3] > 0 ? `RM ${data.months[3].toLocaleString()}` : null,
+            may: data.months[4] > 0 ? `RM ${data.months[4].toLocaleString()}` : null,
+            june: data.months[5] > 0 ? `RM ${data.months[5].toLocaleString()}` : null,
+            july: data.months[6] > 0 ? `RM ${data.months[6].toLocaleString()}` : null,
+            total: `RM ${rowTotal.toLocaleString()}`,
+            color: data.color,
+        };
+        tableData.push(row);
+
+        // Accumulate totals
+        for (let i = 0; i < 7; i++) {
+            monthTotals[i] += data.months[i];
+        }
+        monthTotals[7] += rowTotal;
+    });
+
+    // Create totals row
+    const totalsRow: TableRow = {
+        zone: 'Total',
+        monthLabel: '',
+        january: `RM ${monthTotals[0].toLocaleString()}`,
+        february: `RM ${monthTotals[1].toLocaleString()}`,
+        march: `RM ${monthTotals[2].toLocaleString()}`,
+        april: `RM ${monthTotals[3].toLocaleString()}`,
+        may: `RM ${monthTotals[4].toLocaleString()}`,
+        june: `RM ${monthTotals[5].toLocaleString()}`,
+        july: `RM ${monthTotals[6].toLocaleString()}`,
+        total: `RM ${monthTotals[7].toLocaleString()}`,
+    };
+
+    return { tableData, totalsRow };
 };
 
 // ============================================================
@@ -157,6 +257,23 @@ export default function FinanceDashboard() {
         profitData: number[];
     }>({ years: [], profitData: [] });
 
+    // NEW STATE DECLARATIONS FOR OUTSTANDING AMOUNT TABLE
+    const [outstandingAmountData, setOutstandingAmountData] = useState<TableRow[]>([]);
+    const [outstandingAmountTotals, setOutstandingAmountTotals] = useState<TableRow>({
+        zone: 'Total',
+        monthLabel: '',
+        january: 'RM 0',
+        february: 'RM 0',
+        march: 'RM 0',
+        april: 'RM 0',
+        may: 'RM 0',
+        june: 'RM 0',
+        july: 'RM 0',
+        total: 'RM 0',
+    });
+    const [outstandingTableYear, setOutstandingTableYear] = useState<string>('2025');
+    // END NEW STATE DECLARATIONS
+
     // ============================================================
     // COMPUTED VALUES (useMemo)
     // ============================================================
@@ -241,6 +358,17 @@ export default function FinanceDashboard() {
             updateCompanyFinancialChart(rawBranchData, companyFinancialYear);
         }
     }, [companyFinancialYear, rawBranchData]);
+
+    // NEW useEffect to update outstanding amounts when year or data changes
+    useEffect(() => {
+        if (dashboardMetrics?.branches && dashboardMetrics?.systemBranches && outstandingTableYear) {
+            const yearNum = parseInt(outstandingTableYear);
+            const { tableData, totalsRow } = calculateOutstandingAmountsByZone(dashboardMetrics.branches, dashboardMetrics.systemBranches, yearNum);
+            setOutstandingAmountData(tableData);
+            setOutstandingAmountTotals(totalsRow);
+        }
+    }, [dashboardMetrics, outstandingTableYear]);
+    // END NEW useEffect
 
     // ============================================================
     // DATA FETCHING FUNCTIONS
@@ -340,6 +468,7 @@ export default function FinanceDashboard() {
                 if (categoryYears.length > 0) {
                     setStartYear(categoryYears[categoryYears.length - 1]); // Oldest year
                     setEndYear(categoryYears[0]); // Latest year
+                    setOutstandingTableYear(categoryYears[0]); // Set initial year for outstanding table
                 }
 
                 // ===== CALCULATE ZONE-WISE FINANCIALS FOR CHART =====
@@ -605,6 +734,13 @@ export default function FinanceDashboard() {
     };
 
     /**
+     * Handle year change for outstanding table
+     */
+    const handleOutstandingTableYearChange = (year: string) => {
+        setOutstandingTableYear(year);
+    };
+
+    /**
      * Handle year range selection
      */
     const handleYearRangeSelect = (start: string, end: string) => {
@@ -719,86 +855,17 @@ export default function FinanceDashboard() {
     ];
 
     /**
-     * DataTable data for outstanding amount
-     */
-    const outstandingAmountData: TableRow[] = [
-        {
-            zone: 'HILL PARK',
-            monthLabel: '',
-            january: 'RM 600',
-            february: 'RM 13,173',
-            march: 'RM 200',
-            april: 'RM 1,560',
-            may: 'RM 3,050',
-            june: 'RM 4,810',
-            july: 'RM 10,335',
-            total: 'RM 35,528',
-            color: 'blue',
-        },
-        {
-            zone: 'SETIA ALAM',
-            monthLabel: '',
-            january: 'RM 1,100',
-            february: 'RM 6,105',
-            march: 'RM 1,775',
-            april: 'RM 2,620',
-            may: 'RM 2,470',
-            june: 'RM 2,700',
-            july: 'RM 13,528',
-            total: 'RM 30,297',
-            color: 'purple',
-        },
-        {
-            zone: 'PUNCAK ALAM',
-            monthLabel: '',
-            january: 'RM 400',
-            february: 'RM 6,783',
-            march: 'RM 395',
-            april: null,
-            may: 'RM 650',
-            june: 'RM 8,680',
-            july: 'RM 11,507',
-            total: 'RM 28,415',
-            color: 'orange',
-        },
-        {
-            zone: 'TRANSIT',
-            monthLabel: '',
-            january: 'RM 139',
-            february: null,
-            march: null,
-            april: null,
-            may: 'RM 183',
-            june: 'RM 1,527',
-            july: 'RM 3,645',
-            total: 'RM 5,494',
-            color: 'green',
-        },
-    ];
-
-    /**
-     * DataTable totals row for outstanding amount
-     */
-    const outstandingAmountTotals: TableRow = {
-        zone: 'Total',
-        monthLabel: '',
-        january: 'RM 2,239',
-        february: 'RM 26,061',
-        march: 'RM 4,170',
-        april: 'RM 4,180',
-        may: 'RM 6,353',
-        june: 'RM 17,717',
-        july: 'RM 39,014',
-        total: 'RM 99,734',
-    };
-
-    /**
      * DataTable configuration for outstanding amount
+     * Now includes year filter options
      */
     const outstandingAmountConfig: DataTableConfig = {
         title: 'Outstanding Amount by Zone',
         showColorIndicator: true,
         showTotalRow: true,
+        showYearFilter: true,
+        yearOptions: availableYears,
+        selectedYear: outstandingTableYear,
+        onYearChange: handleOutstandingTableYearChange,
     };
 
     // ============================================================
@@ -1036,7 +1103,7 @@ export default function FinanceDashboard() {
                     </div>
 
                     {/* ============================================================ */}
-                    {/* ROW 6 - OUTSTANDING AMOUNT TABLE */}
+                    {/* ROW 6 - OUTSTANDING AMOUNT TABLE (NOW DYNAMIC) */}
                     {/* Clickable zone rows that navigate to zone dashboard */}
                     {/* ============================================================ */}
                     <div className="mb-6">

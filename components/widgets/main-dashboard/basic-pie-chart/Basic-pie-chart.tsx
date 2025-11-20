@@ -12,6 +12,7 @@ interface BasicPieChartProps {
     series?: number[];
     labels?: string[];
     colors?: string[];
+    title?: string;
     height?: number;
     showDropdown?: boolean;
     dropdownOptions?: string[];

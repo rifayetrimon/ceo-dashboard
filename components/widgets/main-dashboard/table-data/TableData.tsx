@@ -3,8 +3,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import Dropdown from '@/components/dropdown';
-import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 
 // Types
 export interface TableColumn {
@@ -12,51 +10,49 @@ export interface TableColumn {
     label: string;
     align?: 'left' | 'center' | 'right';
     width?: string;
-    clickable?: boolean; // New: Mark column as clickable
+    clickable?: boolean;
 }
 
 export interface TableRow {
     [key: string]: string | number | null | undefined;
-    color?: string; // Optional color indicator
-    id?: string | number; // New: Optional ID for row identification
+    color?: string;
+    id?: string | number;
 }
 
 export interface DataTableConfig {
     title: string;
-    headerColor?: string; // Custom header background color (light mode)
-    headerColorDark?: string; // Custom header background color (dark mode)
-    showColorIndicator?: boolean; // Show color dot in first column
-    showTotalRow?: boolean; // Show total row at bottom
-    totalRowColor?: string; // Custom total row background (light mode)
-    totalRowColorDark?: string; // Custom total row background (dark mode)
+    headerColor?: string;
+    headerColorDark?: string;
+    showColorIndicator?: boolean;
+    showTotalRow?: boolean;
+    totalRowColor?: string;
+    totalRowColorDark?: string;
+    showYearFilter?: boolean; // New: Show year filter dropdown
+    yearOptions?: string[]; // New: Available years
+    selectedYear?: string; // New: Currently selected year
+    onYearChange?: (year: string) => void; // New: Year change handler
 }
 
 interface DataTableProps {
     columns: TableColumn[];
     data: TableRow[];
-    totals?: TableRow; // Optional totals row
+    totals?: TableRow;
     config: DataTableConfig;
     isRtl?: boolean;
     onViewReport?: () => void;
     onEditReport?: () => void;
     onDeleteReport?: () => void;
-    onCellClick?: (row: TableRow, columnKey: string) => void; // New: Handler for cell clicks
+    onCellClick?: (row: TableRow, columnKey: string) => void;
 }
 
-export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, config, isRtl = false, onViewReport, onEditReport, onDeleteReport, onCellClick }) => {
+export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, config, isRtl = false, onCellClick }) => {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
 
     // Default colors
     const headerColor = config.headerColor || '#BAE7FF';
-    const headerColorDark = config.headerColorDark || '#374151'; // gray-700
+    const headerColorDark = config.headerColorDark || '#374151';
     const totalRowColor = config.totalRowColor || '#E3F5FF';
-    const totalRowColorDark = config.totalRowColorDark || '#1F2937'; // gray-800
-
-    const dropdownOptions = [
-        { label: 'View', action: onViewReport },
-        { label: 'Edit', action: onEditReport },
-        { label: 'Delete', action: onDeleteReport },
-    ].filter((option) => option.action); // Only show options with handlers
+    const totalRowColorDark = config.totalRowColorDark || '#1F2937';
 
     const getColorClass = (color?: string) => {
         if (!color) return '';
@@ -81,29 +77,35 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
         }
     };
 
+    const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        if (config.onYearChange) {
+            config.onYearChange(e.target.value);
+        }
+    };
+
     return (
         <div className="panel h-full">
             {/* Header */}
             <div className="mb-5 flex items-center justify-between dark:text-white-light pb-4 pt-4">
                 <h5 className="text-lg font-semibold">{config.title}</h5>
-                {dropdownOptions.length > 0 && (
-                    <div className="dropdown">
-                        <Dropdown
-                            offset={[0, 5]}
-                            placement={isRtl ? 'bottom-start' : 'bottom-end'}
-                            btnClassName="hover:text-primary"
-                            button={<IconHorizontalDots className="text-black/70 hover:!text-primary dark:text-white/70" />}
+
+                {/* Year Filter Dropdown */}
+                {config.showYearFilter && config.yearOptions && config.yearOptions.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Year:</label>
+                        <select
+                            value={config.selectedYear || ''}
+                            onChange={handleYearChange}
+                            className={`form-select rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
+                                isDark ? 'border-gray-600 bg-gray-800 text-white hover:border-gray-500' : 'border-gray-300 bg-white text-gray-900 hover:border-gray-400'
+                            }`}
                         >
-                            <ul>
-                                {dropdownOptions.map((option, index) => (
-                                    <li key={index}>
-                                        <button type="button" onClick={option.action} className="w-full text-left">
-                                            {option.label}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </Dropdown>
+                            {config.yearOptions.map((year) => (
+                                <option key={year} value={year}>
+                                    {year}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 )}
             </div>
