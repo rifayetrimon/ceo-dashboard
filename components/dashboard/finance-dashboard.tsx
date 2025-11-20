@@ -71,7 +71,7 @@ const IconProfit = () => (
     </svg>
 );
 
-export default function MainDashboard() {
+export default function FinanceDashboard() {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
     const [isMounted, setIsMounted] = useState(false);
@@ -648,7 +648,7 @@ export default function MainDashboard() {
                         </Link>
                     </li>
                     <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2">
-                        <span>Sales</span>
+                        <span>Finance</span>
                     </li>
                 </ul>
 

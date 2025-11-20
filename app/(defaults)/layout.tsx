@@ -1,3 +1,4 @@
+'use client';
 import ContentAnimation from '@/components/layouts/content-animation';
 import Footer from '@/components/layouts/footer';
 import Header from '@/components/layouts/header';
@@ -12,31 +13,19 @@ import LoginGuard from '@/components/guards/LoginGuard';
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
     return (
         <LoginGuard>
-            {/* BEGIN MAIN CONTAINER */}
             <div className="relative">
                 <Overlay />
                 <ScrollToTop />
-
-                {/* BEGIN APP SETTING LAUNCHER */}
                 <Setting />
-                {/* END APP SETTING LAUNCHER */}
 
                 <MainContainer>
-                    {/* BEGIN SIDEBAR */}
+                    {/* ALWAYS SHOW SIDEBAR */}
                     <Sidebar />
-                    {/* END SIDEBAR */}
+
                     <div className="main-content flex min-h-screen flex-col">
-                        {/* BEGIN TOP NAVBAR */}
                         <Header />
-                        {/* END TOP NAVBAR */}
-
-                        {/* BEGIN CONTENT AREA */}
                         <ContentAnimation>{children}</ContentAnimation>
-                        {/* END CONTENT AREA */}
-
-                        {/* BEGIN FOOTER */}
                         <Footer />
-                        {/* END FOOTER */}
                         <Portals />
                     </div>
                 </MainContainer>

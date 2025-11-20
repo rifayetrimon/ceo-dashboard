@@ -7,16 +7,11 @@ import { IRootState } from '@/store';
 import { toggleTheme, toggleSidebar, toggleRTL } from '@/store/themeConfigSlice';
 import Dropdown from '@/components/dropdown';
 import IconMenu from '@/components/icon/icon-menu';
-import IconCalendar from '@/components/icon/icon-calendar';
-import IconEdit from '@/components/icon/icon-edit';
-import IconChatNotification from '@/components/icon/icon-chat-notification';
 import IconSearch from '@/components/icon/icon-search';
 import IconXCircle from '@/components/icon/icon-x-circle';
 import IconSun from '@/components/icon/icon-sun';
 import IconMoon from '@/components/icon/icon-moon';
 import IconLaptop from '@/components/icon/icon-laptop';
-import IconMailDot from '@/components/icon/icon-mail-dot';
-import IconArrowLeft from '@/components/icon/icon-arrow-left';
 import IconInfoCircle from '@/components/icon/icon-info-circle';
 import IconBellBing from '@/components/icon/icon-bell-bing';
 import IconUser from '@/components/icon/icon-user';
@@ -25,19 +20,11 @@ import IconLockDots from '@/components/icon/icon-lock-dots';
 import IconLogout from '@/components/icon/icon-logout';
 import IconMenuDashboard from '@/components/icon/menu/icon-menu-dashboard';
 import IconCaretDown from '@/components/icon/icon-caret-down';
-import IconMenuApps from '@/components/icon/menu/icon-menu-apps';
-import IconMenuComponents from '@/components/icon/menu/icon-menu-components';
-import IconMenuElements from '@/components/icon/menu/icon-menu-elements';
-import IconMenuDatatables from '@/components/icon/menu/icon-menu-datatables';
-import IconMenuForms from '@/components/icon/menu/icon-menu-forms';
-import IconMenuPages from '@/components/icon/menu/icon-menu-pages';
-import IconMenuMore from '@/components/icon/menu/icon-menu-more';
 import { usePathname, useRouter } from 'next/navigation';
 import { getTranslation } from '@/i18n';
 import { useProfile } from '@/hook/user/useProfile';
 import { basePath } from '@/lib/basePath';
 import { useLogout } from '@/hook/auth/useLogout';
-import IconAI from '../icon/icon-ai';
 
 const Header = () => {
     const pathname = usePathname();
@@ -74,6 +61,7 @@ const Header = () => {
             }
         }
     }, [pathname]);
+    const hideSidebar = pathname === '/';
 
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
 
@@ -161,24 +149,20 @@ const Header = () => {
                             <Image className="inline w-8 ltr:-ml-1 rtl:-mr-1" src={`${basePath}/assets/images/logo2.svg`} alt="logo" width={32} height={32} />
                             <span className="hidden align-middle text-2xl  font-semibold  transition-all duration-300 ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light md:inline">EBOSS</span>
                         </Link>
-                        <button
+                        {!hideSidebar && (
+                            <button type="button" className="text-gray-600 dark:text-gray-300 hover:text-primary" onClick={() => dispatch(toggleSidebar())}>
+                                <IconMenu className="w-6 h-6" />
+                            </button>
+                        )}
+                        {/* <button
                             type="button"
                             className="collapse-icon flex flex-none rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary ltr:ml-2 rtl:mr-2 dark:bg-dark/40 dark:text-[#d0d2d6] dark:hover:bg-dark/60 dark:hover:text-primary lg:hidden"
                             onClick={() => dispatch(toggleSidebar())}
                         >
                             <IconMenu className="h-5 w-5" />
-                        </button>
+                        </button> */}
                     </div>
 
-                    <div className="hidden ltr:mr-2 rtl:ml-2 sm:block">
-                        <ul className="flex items-center space-x-2 rtl:space-x-reverse dark:text-[#d0d2d6]">
-                            <li>
-                                <Link href="/calendar" className="block rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60">
-                                    <IconCalendar />
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
                     {/* search button */}
                     <div className="flex items-center space-x-1.5 ltr:ml-auto rtl:mr-auto rtl:space-x-reverse dark:text-[#d0d2d6] sm:flex-1 ltr:sm:ml-0 sm:rtl:mr-0 lg:space-x-2">
                         <div className="sm:ltr:mr-auto sm:rtl:ml-auto">
