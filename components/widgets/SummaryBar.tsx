@@ -29,31 +29,54 @@ interface SummaryBarProps {
     yearOptions?: string[];
     selectedYear?: string;
     onYearSelect?: (year: string) => void;
+    // New props for year range
+    showYearRange?: boolean;
+    selectedStartYear?: string;
+    selectedEndYear?: string;
+    onYearRangeSelect?: (startYear: string, endYear: string) => void;
 }
 
 export default function SummaryBar({
     title = 'Summary',
     items,
-    showDropdown = true,
+    showDropdown = false, // Changed default to false
     dropdownOptions = ['View Report', 'Edit Report', 'Mark as Done'],
     onDropdownSelect,
     showYearFilter = true,
     yearOptions = ['2021', '2022', '2023', '2024', '2025'],
     selectedYear: propSelectedYear,
     onYearSelect,
+    // Year range props
+    showYearRange = false,
+    selectedStartYear: propStartYear,
+    selectedEndYear: propEndYear,
+    onYearRangeSelect,
 }: SummaryBarProps) {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
 
-    // Use prop if provided, otherwise default to latest year
+    // Single year selection state
     const [selectedYear, setSelectedYear] = useState(propSelectedYear || yearOptions[yearOptions.length - 1]);
 
-    // Update when prop changes
+    // Year range selection state
+    const [startYear, setStartYear] = useState(propStartYear || yearOptions[0]);
+    const [endYear, setEndYear] = useState(propEndYear || yearOptions[yearOptions.length - 1]);
+
+    // Update when props change
     useEffect(() => {
         if (propSelectedYear) {
             setSelectedYear(propSelectedYear);
         }
     }, [propSelectedYear]);
+
+    useEffect(() => {
+        if (propStartYear) {
+            setStartYear(propStartYear);
+        }
+        if (propEndYear) {
+            setEndYear(propEndYear);
+        }
+    }, [propStartYear, propEndYear]);
 
     const handleDropdownSelect = (option: string) => {
         if (onDropdownSelect) {
@@ -68,14 +91,110 @@ export default function SummaryBar({
         }
     };
 
+    const handleStartYearSelect = (year: string) => {
+        setStartYear(year);
+        // Ensure end year is not before start year
+        if (yearOptions.indexOf(year) > yearOptions.indexOf(endYear)) {
+            setEndYear(year);
+            if (onYearRangeSelect) {
+                onYearRangeSelect(year, year);
+            }
+        } else {
+            if (onYearRangeSelect) {
+                onYearRangeSelect(year, endYear);
+            }
+        }
+    };
+
+    const handleEndYearSelect = (year: string) => {
+        setEndYear(year);
+        // Ensure end year is not before start year
+        if (yearOptions.indexOf(year) < yearOptions.indexOf(startYear)) {
+            setStartYear(year);
+            if (onYearRangeSelect) {
+                onYearRangeSelect(year, year);
+            }
+        } else {
+            if (onYearRangeSelect) {
+                onYearRangeSelect(startYear, year);
+            }
+        }
+    };
+
     return (
         <div className="panel h-full">
             <div className="mb-5 flex items-center justify-between dark:text-white-light">
                 <h5 className="text-lg font-semibold">{title}</h5>
 
                 <div className="flex items-center gap-2">
-                    {/* Year Filter Dropdown */}
-                    {showYearFilter && yearOptions.length > 0 && (
+                    {/* Year Range Filter */}
+                    {showYearRange && yearOptions.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            {/* Start Year Dropdown */}
+                            <SmallDropdown
+                                offset={[0, 5]}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                btnClassName={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:border-primary ${
+                                    isDark ? 'border-gray-600 bg-gray-800 text-white hover:bg-gray-700' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                                button={
+                                    <>
+                                        <span>{startYear}</span>
+                                        <IconCaretDown className="h-3.5 w-3.5" />
+                                    </>
+                                }
+                            >
+                                {yearOptions.map((year, index) => (
+                                    <li key={index}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleStartYearSelect(year)}
+                                            className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                                isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                                            } ${startYear === year ? 'bg-gray-100 font-medium dark:bg-gray-700' : ''}`}
+                                        >
+                                            {year}
+                                        </button>
+                                    </li>
+                                ))}
+                            </SmallDropdown>
+
+                            {/* Separator */}
+                            <span className="text-sm font-medium text-gray-500 dark:text-gray-400">to</span>
+
+                            {/* End Year Dropdown */}
+                            <SmallDropdown
+                                offset={[0, 5]}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                btnClassName={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:border-primary ${
+                                    isDark ? 'border-gray-600 bg-gray-800 text-white hover:bg-gray-700' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                                button={
+                                    <>
+                                        <span>{endYear}</span>
+                                        <IconCaretDown className="h-3.5 w-3.5" />
+                                    </>
+                                }
+                            >
+                                {yearOptions.map((year, index) => (
+                                    <li key={index}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleEndYearSelect(year)}
+                                            className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                                isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-gray-900'
+                                            } ${endYear === year ? 'bg-gray-100 font-medium dark:bg-gray-700' : ''}`}
+                                        >
+                                            {year}
+                                        </button>
+                                    </li>
+                                ))}
+                            </SmallDropdown>
+                        </div>
+                    )}
+
+                    {/* Single Year Filter (only show if not using range) */}
+                    {!showYearRange && showYearFilter && yearOptions.length > 0 && (
                         <SmallDropdown
                             offset={[0, 5]}
                             placement={isRtl ? 'bottom-start' : 'bottom-end'}
@@ -105,8 +224,8 @@ export default function SummaryBar({
                         </SmallDropdown>
                     )}
 
-                    {/* Action Dropdown */}
-                    {showDropdown && (
+                    {/* Action Dropdown - Only shows when showDropdown is true */}
+                    {showDropdown && dropdownOptions.length > 0 && (
                         <div className="dropdown">
                             <Dropdown placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`} button={<IconHorizontalDots className="h-5 w-5 text-black/70 hover:!text-primary dark:text-white/70" />}>
                                 <ul>

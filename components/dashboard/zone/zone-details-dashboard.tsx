@@ -27,11 +27,6 @@ export default function ZoneDetailsDashboard() {
     const fetchZoneData = async (zone: string) => {
         try {
             setLoading(true);
-            // Call your API to get zone-specific data
-            // const response = await dashboardService.getZoneData(zone);
-            // setZoneData(response.data);
-
-            // For now, simulate loading
             setTimeout(() => {
                 setLoading(false);
             }, 1000);

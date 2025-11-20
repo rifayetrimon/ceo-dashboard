@@ -390,7 +390,7 @@ export const processZoneData = (branches: Branch[], year: number): ProcessedZone
         const costYear = branch.monthly_cost.find((y) => y.year === year);
         const cost = costYear?.records.reduce((sum, r) => sum + r.total, 0) || 0;
 
-        // Calculate profit
+        // Calculate profit = revenue - cost
         const profit = revenue - cost;
 
         if (!zoneMap[zoneName]) {
@@ -428,6 +428,7 @@ export const processZoneData = (branches: Branch[], year: number): ProcessedZone
 /**
  * Calculate zone-wise financial data from branches
  * Maps branches to their zones using system info and aggregates financial data
+ * FIXED: Profit = Income - Expense (not using monthly_profit directly)
  */
 export const calculateZoneWiseFinancials = (financeBranches: any[], systemBranches: any[], year: number): ZoneFinancialSummary[] => {
     // Create a map of branchId to zone information
@@ -443,7 +444,7 @@ export const calculateZoneWiseFinancials = (financeBranches: any[], systemBranch
     });
 
     // Aggregate financial data by zone
-    const zoneData: { [zoneName: string]: { income: number; expense: number; profit: number } } = {};
+    const zoneData: { [zoneName: string]: { income: number; expense: number } } = {};
 
     financeBranches.forEach((branch: any) => {
         const zoneInfo = branchZoneMap[branch.branchId];
@@ -453,7 +454,7 @@ export const calculateZoneWiseFinancials = (financeBranches: any[], systemBranch
 
         // Initialize zone if not exists
         if (!zoneData[zoneName]) {
-            zoneData[zoneName] = { income: 0, expense: 0, profit: 0 };
+            zoneData[zoneName] = { income: 0, expense: 0 };
         }
 
         // Calculate income for the year
@@ -469,22 +470,15 @@ export const calculateZoneWiseFinancials = (financeBranches: any[], systemBranch
             const yearCost = costYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
             zoneData[zoneName].expense += yearCost;
         }
-
-        // Calculate profit for the year
-        const profitYear = branch.monthly_profit?.find((y: any) => y.year === year);
-        if (profitYear) {
-            const yearProfit = profitYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
-            zoneData[zoneName].profit += yearProfit;
-        }
     });
 
-    // Convert to array format and sort by zone name
+    // Convert to array format and calculate profit (income - expense)
     return Object.entries(zoneData)
         .map(([zoneName, data]) => ({
             zoneName,
             totalIncome: data.income,
             totalExpense: data.expense,
-            totalProfit: data.profit,
+            totalProfit: data.income - data.expense, // FIXED: Calculate profit correctly
         }))
         .sort((a, b) => a.zoneName.localeCompare(b.zoneName));
 };
@@ -530,7 +524,7 @@ export const getZoneChartSeries = (
 // ===== CATEGORY DATA FUNCTIONS =====
 
 /**
- * Process category totals for a specific year across all branches
+ * Process category totals for a specific year across all branches (Revenue)
  */
 export const processCategoryTotalsForYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
     const categoryTotals: Map<string, { name: string; total: number }> = new Map();
@@ -572,7 +566,49 @@ export const processCategoryTotalsForYear = (branches: any[], year: string): { l
 };
 
 /**
- * Process category totals for a specific zone and year
+ * Process expense category totals for a specific year across all branches
+ */
+export const processExpenseCategoryTotalsForYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
+    const categoryTotals: Map<string, { name: string; total: number }> = new Map();
+
+    branches.forEach((branch) => {
+        const yearData = branch.monthly_cost?.find((yr: any) => yr.year.toString() === year);
+
+        if (yearData) {
+            yearData.records?.forEach((record: any) => {
+                record.categories?.forEach((category: any) => {
+                    const existing = categoryTotals.get(category.code);
+                    if (existing) {
+                        existing.total += category.total;
+                    } else {
+                        categoryTotals.set(category.code, {
+                            name: category.name,
+                            total: category.total,
+                        });
+                    }
+                });
+            });
+        }
+    });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedCategories = Array.from(categoryTotals.entries())
+        .map(([code, data]) => ({
+            code,
+            name: data.name,
+            total: data.total,
+        }))
+        .filter((cat) => cat.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedCategories.map((cat) => cat.name),
+        series: sortedCategories.map((cat) => cat.total),
+    };
+};
+
+/**
+ * Process category totals for a specific zone and year (Revenue)
  */
 export const processCategoryTotalsForZone = (branches: any[], zoneName: string, year: string): { labels: string[]; series: number[] } => {
     const categoryTotals: Map<string, { name: string; total: number }> = new Map();
@@ -581,6 +617,50 @@ export const processCategoryTotalsForZone = (branches: any[], zoneName: string, 
         .filter((branch: any) => branch.name.toLowerCase().includes(zoneName.toLowerCase()))
         .forEach((branch: any) => {
             const yearData = branch.monthly_revenue?.find((yr: any) => yr.year.toString() === year);
+
+            if (yearData) {
+                yearData.records?.forEach((record: any) => {
+                    record.categories?.forEach((category: any) => {
+                        const existing = categoryTotals.get(category.code);
+                        if (existing) {
+                            existing.total += category.total;
+                        } else {
+                            categoryTotals.set(category.code, {
+                                name: category.name,
+                                total: category.total,
+                            });
+                        }
+                    });
+                });
+            }
+        });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedCategories = Array.from(categoryTotals.entries())
+        .map(([code, data]) => ({
+            code,
+            name: data.name,
+            total: data.total,
+        }))
+        .filter((cat) => cat.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedCategories.map((cat) => cat.name),
+        series: sortedCategories.map((cat) => cat.total),
+    };
+};
+
+/**
+ * Process expense category totals for a specific zone and year
+ */
+export const processExpenseCategoryTotalsForZone = (branches: any[], zoneName: string, year: string): { labels: string[]; series: number[] } => {
+    const categoryTotals: Map<string, { name: string; total: number }> = new Map();
+
+    branches
+        .filter((branch: any) => branch.name.toLowerCase().includes(zoneName.toLowerCase()))
+        .forEach((branch: any) => {
+            const yearData = branch.monthly_cost?.find((yr: any) => yr.year.toString() === year);
 
             if (yearData) {
                 yearData.records?.forEach((record: any) => {
@@ -699,4 +779,313 @@ export const formatLargeNumber = (value: number): string => {
         return (value / 1000).toFixed(0) + 'K';
     }
     return value.toFixed(0);
+};
+
+/**
+ * Process company-wide financial totals (Income, Cost, Profit) for a specific year
+ * Aggregates all branches' data for the selected year
+ * FIXED: Profit = Income - Expense (calculated correctly)
+ */
+export const processCompanyFinancialsByYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
+    let totalIncome = 0;
+    let totalCost = 0;
+
+    branches.forEach((branch: any) => {
+        // Calculate income (revenue) for the year
+        const revenueYear = branch.monthly_revenue?.find((yr: any) => yr.year.toString() === year);
+        if (revenueYear) {
+            const yearRevenue = revenueYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+            totalIncome += yearRevenue;
+        }
+
+        // Calculate cost for the year
+        const costYear = branch.monthly_cost?.find((yr: any) => yr.year.toString() === year);
+        if (costYear) {
+            const yearCost = costYear.records.reduce((sum: number, r: any) => sum + r.total, 0);
+            totalCost += yearCost;
+        }
+    });
+
+    // Calculate profit correctly: Income - Expense
+    const totalProfit = totalIncome - totalCost;
+
+    return {
+        labels: ['Income', 'Cost', 'Profit'],
+        series: [totalIncome, totalCost, totalProfit],
+    };
+};
+
+/**
+ * Calculate financial totals across a year range
+ * Aggregates data from startYear to endYear (inclusive)
+ */
+export const calculateYearRangeTotals = (processedData: ProcessedFinanceData, startYear: string, endYear: string) => {
+    const years = processedData.years.filter((year) => {
+        return year >= startYear && year <= endYear;
+    });
+
+    let totalRevenue = 0;
+    let totalCost = 0;
+
+    years.forEach((year) => {
+        if (processedData.revenueByYear[year]) {
+            totalRevenue += processedData.revenueByYear[year].reduce((sum, val) => sum + val, 0);
+        }
+        if (processedData.costByYear[year]) {
+            totalCost += processedData.costByYear[year].reduce((sum, val) => sum + val, 0);
+        }
+    });
+
+    const totalProfit = totalRevenue - totalCost;
+
+    return {
+        revenue: totalRevenue,
+        cost: totalCost,
+        profit: totalProfit,
+        profitMargin: totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : '0.00',
+        yearsIncluded: years,
+    };
+};
+
+/**
+ * Calculate zone-wise financial data across a year range
+ */
+export const calculateZoneWiseFinancialsForRange = (financeBranches: any[], systemBranches: any[], startYear: number, endYear: number): ZoneFinancialSummary[] => {
+    // Create a map of branchId to zone information
+    const branchZoneMap: { [branchId: number]: { zone: string; zoneName: string } } = {};
+
+    systemBranches.forEach((branch: any) => {
+        if (branch.zone && branch.zone.trim() !== '') {
+            branchZoneMap[branch.branchId] = {
+                zone: branch.zone,
+                zoneName: branch.zoneName || branch.zone,
+            };
+        }
+    });
+
+    // Aggregate financial data by zone across year range
+    const zoneData: { [zoneName: string]: { income: number; expense: number } } = {};
+
+    financeBranches.forEach((branch: any) => {
+        const zoneInfo = branchZoneMap[branch.branchId];
+        if (!zoneInfo) return;
+
+        const zoneName = zoneInfo.zoneName;
+
+        // Initialize zone if not exists
+        if (!zoneData[zoneName]) {
+            zoneData[zoneName] = { income: 0, expense: 0 };
+        }
+
+        // Sum up income across the year range
+        branch.monthly_revenue?.forEach((yearData: any) => {
+            if (yearData.year >= startYear && yearData.year <= endYear) {
+                const yearRevenue = yearData.records.reduce((sum: number, r: any) => sum + r.total, 0);
+                zoneData[zoneName].income += yearRevenue;
+            }
+        });
+
+        // Sum up expenses across the year range
+        branch.monthly_cost?.forEach((yearData: any) => {
+            if (yearData.year >= startYear && yearData.year <= endYear) {
+                const yearCost = yearData.records.reduce((sum: number, r: any) => sum + r.total, 0);
+                zoneData[zoneName].expense += yearCost;
+            }
+        });
+    });
+
+    // Convert to array format and calculate profit
+    return Object.entries(zoneData)
+        .map(([zoneName, data]) => ({
+            zoneName,
+            totalIncome: data.income,
+            totalExpense: data.expense,
+            totalProfit: data.income - data.expense,
+        }))
+        .sort((a, b) => a.zoneName.localeCompare(b.zoneName));
+};
+
+/**
+ * Process category totals across a year range
+ */
+export const processCategoryTotalsForYearRange = (branches: any[], startYear: string, endYear: string): { labels: string[]; series: number[] } => {
+    const categoryTotals: Map<string, { name: string; total: number }> = new Map();
+
+    branches.forEach((branch) => {
+        branch.monthly_revenue?.forEach((yearData: any) => {
+            const yearStr = yearData.year.toString();
+
+            // Check if year is in range
+            if (yearStr >= startYear && yearStr <= endYear) {
+                yearData.records?.forEach((record: any) => {
+                    record.categories?.forEach((category: any) => {
+                        const existing = categoryTotals.get(category.code);
+                        if (existing) {
+                            existing.total += category.total;
+                        } else {
+                            categoryTotals.set(category.code, {
+                                name: category.name,
+                                total: category.total,
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedCategories = Array.from(categoryTotals.entries())
+        .map(([code, data]) => ({
+            code,
+            name: data.name,
+            total: data.total,
+        }))
+        .filter((cat) => cat.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedCategories.map((cat) => cat.name),
+        series: sortedCategories.map((cat) => cat.total),
+    };
+};
+
+/**
+ * Process expense category totals across a year range
+ */
+export const processExpenseCategoryTotalsForYearRange = (branches: any[], startYear: string, endYear: string): { labels: string[]; series: number[] } => {
+    const categoryTotals: Map<string, { name: string; total: number }> = new Map();
+
+    branches.forEach((branch) => {
+        branch.monthly_cost?.forEach((yearData: any) => {
+            const yearStr = yearData.year.toString();
+
+            // Check if year is in range
+            if (yearStr >= startYear && yearStr <= endYear) {
+                yearData.records?.forEach((record: any) => {
+                    record.categories?.forEach((category: any) => {
+                        const existing = categoryTotals.get(category.code);
+                        if (existing) {
+                            existing.total += category.total;
+                        } else {
+                            categoryTotals.set(category.code, {
+                                name: category.name,
+                                total: category.total,
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    });
+
+    // Convert to arrays and sort by total (descending)
+    const sortedCategories = Array.from(categoryTotals.entries())
+        .map(([code, data]) => ({
+            code,
+            name: data.name,
+            total: data.total,
+        }))
+        .filter((cat) => cat.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+    return {
+        labels: sortedCategories.map((cat) => cat.name),
+        series: sortedCategories.map((cat) => cat.total),
+    };
+};
+
+/**
+ * Get chart series data aggregated across a year range
+ */
+export const getChartSeriesForYearRange = (
+    processedData: ProcessedFinanceData,
+    startYear: string,
+    endYear: string,
+    includeRevenue: boolean = true,
+    includeCost: boolean = true,
+    includeProfit: boolean = false,
+): ChartSeriesData[] => {
+    const years = processedData.years.filter((year) => year >= startYear && year <= endYear);
+
+    // Aggregate monthly data across all years in range
+    const aggregatedRevenue = new Array(12).fill(0);
+    const aggregatedCost = new Array(12).fill(0);
+    const aggregatedProfit = new Array(12).fill(0);
+
+    years.forEach((year) => {
+        if (processedData.revenueByYear[year]) {
+            processedData.revenueByYear[year].forEach((val, idx) => {
+                aggregatedRevenue[idx] += val;
+            });
+        }
+        if (processedData.costByYear[year]) {
+            processedData.costByYear[year].forEach((val, idx) => {
+                aggregatedCost[idx] += val;
+            });
+        }
+        if (processedData.profitByYear[year]) {
+            processedData.profitByYear[year].forEach((val, idx) => {
+                aggregatedProfit[idx] += val;
+            });
+        }
+    });
+
+    const series: ChartSeriesData[] = [];
+
+    if (includeRevenue) {
+        series.push({
+            name: 'Revenue',
+            data: aggregatedRevenue,
+        });
+    }
+
+    if (includeCost) {
+        series.push({
+            name: 'Cost',
+            data: aggregatedCost,
+        });
+    }
+
+    if (includeProfit) {
+        series.push({
+            name: 'Profit',
+            data: aggregatedProfit,
+        });
+    }
+
+    return series;
+};
+
+/**
+ * Get latest N years of profit data for yearly profit chart
+ * Returns year labels and profit amounts for bar chart display
+ * The data will show oldest to newest (left to right on chart)
+ * Hover will display exact profit amount
+ *
+ * @param processedData - The processed finance data
+ * @param numberOfYears - Number of recent years to include (default: 5)
+ * @returns Object with years array and profitData array
+ */
+export const getLatestYearsProfitData = (
+    processedData: ProcessedFinanceData,
+    numberOfYears: number = 5,
+): {
+    years: string[];
+    profitData: number[];
+} => {
+    // Get the latest N years (already sorted descending in processedData.years)
+    const latestYears = processedData.years.slice(0, numberOfYears).reverse(); // Reverse to show oldest to newest
+
+    // Calculate profit for each year (Revenue - Cost)
+    const profitData = latestYears.map((year) => {
+        const revenue = processedData.revenueByYear[year]?.reduce((sum, val) => sum + val, 0) || 0;
+        const cost = processedData.costByYear[year]?.reduce((sum, val) => sum + val, 0) || 0;
+        return revenue - cost; // Calculate profit
+    });
+
+    return {
+        years: latestYears,
+        profitData,
+    };
 };

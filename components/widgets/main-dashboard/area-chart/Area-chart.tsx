@@ -16,8 +16,6 @@ interface SeriesData {
 
 interface AreaChartProps {
     title: string;
-    subtitle?: string;
-    subtitleValue?: string;
     series: SeriesData[];
     labels: string[];
     height?: number;
@@ -37,8 +35,6 @@ interface AreaChartProps {
 
 export default function AreaChart({
     title,
-    subtitle,
-    subtitleValue,
     series,
     labels,
     height = 325,
@@ -270,16 +266,19 @@ export default function AreaChart({
             },
         },
         legend: {
-            position: 'top',
-            horizontalAlign: 'right',
-            fontSize: '16px',
+            position: 'bottom',
+            horizontalAlign: 'center',
+            fontSize: '12px',
+            fontWeight: 500,
+            offsetY: 15,
             markers: {
                 width: 10,
                 height: 10,
+                radius: 2,
                 offsetX: -2,
             },
             itemMargin: {
-                horizontal: 10,
+                horizontal: 20,
                 vertical: 5,
             },
         },
@@ -330,7 +329,9 @@ export default function AreaChart({
     return (
         <div className={`panel h-full ${colSpan}`}>
             <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h5 className="text-lg font-semibold dark:text-white-light">{title}</h5>
+                <h5 className="text-lg font-semibold dark:text-white-light">
+                    {title} {showYearFilter && <span className="text-gray-500 dark:text-gray-400">({selectedYear})</span>}
+                </h5>
 
                 <div className="flex items-center gap-2">
                     {/* Year Filter Dropdown */}
@@ -386,13 +387,6 @@ export default function AreaChart({
                     )}
                 </div>
             </div>
-
-            {subtitle && (
-                <p className="text-lg dark:text-white-light/90">
-                    {subtitle}
-                    {subtitleValue && <span className="ml-2 text-primary">{subtitleValue}</span>}
-                </p>
-            )}
 
             <div className="relative">
                 <div className="rounded-lg bg-white dark:bg-black">

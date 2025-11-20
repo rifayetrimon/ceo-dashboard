@@ -52,15 +52,15 @@ export default function GrossNetProfit({
             toolbar: {
                 show: false,
             },
-            stacked: true,
-            stackType: '100%',
+            stacked: false,
         },
         dataLabels: {
             enabled: false,
         },
         stroke: {
             show: true,
-            width: 1,
+            width: chartType === 'line' ? 3 : 1,
+            curve: 'smooth',
         },
         colors: colors,
         responsive: [
@@ -77,37 +77,98 @@ export default function GrossNetProfit({
         ],
         xaxis: {
             labels: {
-                show: false,
+                show: true,
+                style: {
+                    fontSize: '11px',
+                    colors: isDark ? '#888ea8' : '#4b5563',
+                },
             },
             categories: categories,
+            axisBorder: {
+                show: true,
+                color: isDark ? '#191e3a' : '#e0e6ed',
+            },
+            axisTicks: {
+                show: false,
+            },
         },
         yaxis: {
-            show: false,
+            show: true,
+            labels: {
+                show: true,
+                style: {
+                    fontSize: '11px',
+                    colors: isDark ? '#888ea8' : '#4b5563',
+                },
+                formatter: (value: number) => {
+                    if (value >= 1000000) {
+                        return (value / 1000000).toFixed(1) + 'M';
+                    } else if (value >= 1000) {
+                        return (value / 1000).toFixed(0) + 'K';
+                    }
+                    return value.toFixed(0);
+                },
+            },
+            opposite: false,
         },
         fill: {
-            opacity: 1,
+            opacity: chartType === 'area' ? 0.3 : 1,
         },
         plotOptions: {
             bar: {
                 horizontal: false,
-                columnWidth: '25%',
+                columnWidth: '50%',
+                borderRadius: 4,
+                borderRadiusApplication: 'end',
             },
         },
         legend: {
-            show: false,
+            show: true,
+            position: 'top',
+            horizontalAlign: 'right',
+            fontSize: '12px',
+            markers: {
+                width: 10,
+                height: 10,
+                radius: 2,
+            },
+            itemMargin: {
+                horizontal: 10,
+                vertical: 0,
+            },
         },
         grid: {
-            show: false,
+            show: true,
+            borderColor: isDark ? '#191e3a' : '#e0e6ed',
+            strokeDashArray: 5,
             xaxis: {
                 lines: {
                     show: false,
                 },
             },
+            yaxis: {
+                lines: {
+                    show: true,
+                },
+            },
             padding: {
-                top: 10,
-                right: -20,
-                bottom: -20,
-                left: -20,
+                top: 0,
+                right: 10,
+                bottom: 0,
+                left: 10,
+            },
+        },
+        tooltip: {
+            y: {
+                formatter: (value: number) => {
+                    return (
+                        'RM ' +
+                        value.toLocaleString('en-MY', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        })
+                    );
+                },
             },
         },
     };
@@ -128,7 +189,7 @@ export default function GrossNetProfit({
                     {isMounted ? (
                         <ReactApexChart series={series} options={chartOptions} type={chartType} height={height} width={'100%'} />
                     ) : (
-                        <div className="grid min-h-[325px] place-content-center bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08]">
+                        <div className="grid place-content-center bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08]" style={{ minHeight: height }}>
                             <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-black !border-l-transparent dark:border-white"></span>
                         </div>
                     )}
