@@ -60,8 +60,28 @@ export default function AreaChart({
         setIsMounted(true);
     }, []);
 
-    // Default colors if not provided
-    const defaultColors = isDark ? ['#2196F3', '#E7515A'] : ['#1B55E2', '#E7515A'];
+    // Generate colors based on series names
+    const generateColors = () => {
+        if (colors) return colors;
+
+        const defaultColors: string[] = [];
+        series.forEach((s) => {
+            const name = s.name.toLowerCase();
+            if (name.includes('income') || name.includes('revenue')) {
+                defaultColors.push('#1B55E2'); // Blue for Income/Revenue
+            } else if (name.includes('cost') || name.includes('expense')) {
+                defaultColors.push('#E7515A'); // Red for Cost/Expense
+            } else if (name.includes('profit')) {
+                defaultColors.push('#00ab55'); // Green for Profit
+            } else {
+                defaultColors.push(isDark ? '#2196F3' : '#1B55E2'); // Default blue
+            }
+        });
+
+        return defaultColors;
+    };
+
+    const chartColors = generateColors();
 
     // Calculate dynamic min/max and tick configuration for yAxis
     const calculateYAxisConfig = () => {
@@ -191,20 +211,20 @@ export default function AreaChart({
             left: -7,
             top: 22,
         },
-        colors: colors || defaultColors,
+        colors: chartColors,
         markers: {
             discrete: [
                 {
                     seriesIndex: 0,
                     dataPointIndex: 6,
-                    fillColor: (colors || defaultColors)[0],
+                    fillColor: chartColors[0],
                     strokeColor: 'transparent',
                     size: 7,
                 },
                 {
                     seriesIndex: 1,
                     dataPointIndex: 5,
-                    fillColor: (colors || defaultColors)[1],
+                    fillColor: chartColors[1],
                     strokeColor: 'transparent',
                     size: 7,
                 },
@@ -278,7 +298,7 @@ export default function AreaChart({
                 offsetX: -2,
             },
             itemMargin: {
-                horizontal: 20,
+                horizontal: 20, // 20px gap between legend items
                 vertical: 5,
             },
         },

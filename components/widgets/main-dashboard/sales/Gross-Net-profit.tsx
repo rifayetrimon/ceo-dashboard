@@ -154,7 +154,7 @@ export default function GrossNetProfit({
             padding: {
                 top: 0,
                 right: 10,
-                bottom: 0,
+                bottom: 0, // Reset to 0 for proper spacing
                 left: 10,
             },
         },
@@ -184,7 +184,7 @@ export default function GrossNetProfit({
                     <div className={`grid h-11 w-11 place-content-center rounded-full ${iconBgColor} ${iconTextColor}`}>{icon}</div>
                 </div>
             </div>
-            <div>
+            <div className="-mb-5">
                 <div className="rounded-lg bg-white dark:bg-black">
                     {isMounted ? (
                         <ReactApexChart series={series} options={chartOptions} type={chartType} height={height} width={'100%'} />
