@@ -1,6 +1,6 @@
 // API CONFIGURATION
 // NOTE: In a real application, this should be an environment variable.
-const API_BASE_URL = 'https://fedc5fb7-9b4b-4ae2-bfb6-ee11a3c5199e.mock.pstmn.io';
+const API_BASE_URL = 'https://ec5145c9-7c8e-4a5e-b0de-0e1dd1891859.mock.pstmn.io';
 
 // ============================================================
 // INTERFACE DEFINITIONS

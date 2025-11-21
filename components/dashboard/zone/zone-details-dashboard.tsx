@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================================
-// IMPORTS (Reusing Finance Dashboard UI Components)
+// IMPORTS
 // ============================================================
 import IconDollarSign from '@/components/icon/icon-dollar-sign';
 import { IRootState } from '@/store';
@@ -12,9 +12,9 @@ import { useSelector } from 'react-redux';
 import Image from 'next/image';
 
 // ============================================================
-// ZONE SERVICE IMPORTS (Assuming these are structured as recommended)
+// SERVICE IMPORTS
 // ============================================================
-import { dashboardService, getFinanceSummary, Branch } from '@/services/sales/financeService'; // Core API fetchers & types
+import { dashboardService, getFinanceSummary, Branch } from '@/services/sales/financeService';
 
 import {
     calculateZoneSystemInfo,
@@ -23,41 +23,145 @@ import {
     getZoneChartSeriesForYear,
     processZoneCategoryTotalsForYear,
     processZoneExpenseCategoryTotalsForYear,
+    processZoneCompanyFinancialsByYear,
+    getZoneYearlyFinancialSeries,
+    getLatestYearsZoneProfitData,
+    getZoneBranchComparisonData,
     ProcessedZoneFinancialData,
     ZoneSystemInfo,
-} from '@/services/sales/zoneService'; // New Zone-specific logic
+} from '@/services/sales/zoneService';
+
+// ============================================================
+// COMPONENT IMPORTS
+// ============================================================
 import { StatCardData, StatsGrid } from '@/components/widgets/main-dashboard/stat-card/StatCard';
-import { TableRow } from '@/components/widgets/main-dashboard/table-data/DataTableWithFilters';
-import SummaryBar from '@/components/widgets/SummaryBar';
+import { DataTable, DataTableConfig, TableColumn, TableRow } from '@/components/widgets/main-dashboard/table-data/TableData';
 import AreaChart from '@/components/widgets/main-dashboard/area-chart/Area-chart';
 import PieChart from '@/components/widgets/main-dashboard/pie-chart/Pie-chart';
 import BasicPieChart from '@/components/widgets/main-dashboard/basic-pie-chart/Basic-pie-chart';
 import GrossNetProfit from '@/components/widgets/main-dashboard/sales/Gross-Net-profit';
 import ZoneBar from '@/components/widgets/Zone-bar';
-import { DataTable } from '@/components/widgets/main-dashboard/table-data/TableData';
-import OutstandingAmountChart from '@/components/widgets/main-dashboard/sales/Amount-zone-chart';
 
 // ============================================================
-// ICON COMPONENTS (Reused)
+// ICON COMPONENTS
 // ============================================================
 
 const IconDollar = () => (
-    /* SVG definition */ <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const IconExpense = () => (
-    /* SVG definition */ <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 8V5l6 7-6 7v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 8V5L2 12l6 7v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
+// ============================================================
+// HELPER FUNCTIONS (Outstanding Amount Logic FIX)
+// ============================================================
 
-const IconProfit = () => (
-    /* SVG definition */ <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+const getDefaultZoneInfo = (): ZoneSystemInfo => ({
+    totalBranches: 0,
+    totalSchools: 0,
+    totalStudents: 0,
+    totalStaff: 0,
+});
+
+/**
+ * Calculate outstanding amounts by branch for the zone
+ * NOTE: Using 'monthly_revenue' as a placeholder for outstanding amount.
+ */
+const calculateOutstandingAmountsByBranch = (zoneBranches: Branch[], systemBranches: any[], year: number): { tableData: TableRow[]; totalsRow: TableRow } => {
+    const branchMap = new Map<string, { months: number[]; total: number; color: string; branchName: string }>();
+    const colors = ['#4361ee', '#00ab55', '#e2a03f', '#e7515a', '#805dca', '#2196f3', '#10b981', '#f3504d'];
+    let colorIndex = 0;
+
+    // Helper to format currency consistently
+    const formatRm = (value: number) => `RM ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    // Initialize & calculate branch data
+    zoneBranches.forEach((financeBranch) => {
+        // Assume branchId is the unique key for joining systemBranches
+        const sysBranch = systemBranches.find((sb) => sb.branchId === financeBranch.branchId);
+        if (!sysBranch) return;
+
+        const branchId = financeBranch.branchId.toString();
+        const branchName = sysBranch.name || sysBranch.code || 'Unknown';
+
+        // Initialize/Update Map entry
+        if (!branchMap.has(branchId)) {
+            branchMap.set(branchId, {
+                months: new Array(12).fill(0),
+                total: 0,
+                color: colors[colorIndex % colors.length],
+                branchName: branchName,
+            });
+            colorIndex++;
+        }
+
+        const branchData = branchMap.get(branchId)!;
+
+        // Calculate outstanding amounts using revenue data
+        const yearRevenue = financeBranch.monthly_revenue?.find((y: any) => y.year === year);
+        if (yearRevenue) {
+            yearRevenue.records.forEach((record: any) => {
+                const monthIndex = record.month - 1;
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    // Placeholder: Replace 'record.total' with the actual outstanding amount field
+                    branchData.months[monthIndex] += record.total || 0;
+                }
+            });
+        }
+    });
+
+    // Convert to table data format (showing first 7 months)
+    const tableData: TableRow[] = [];
+    const monthTotals = new Array(8).fill(0); // 7 months + total
+
+    branchMap.forEach((data, branchId) => {
+        const rowTotal = data.months.slice(0, 7).reduce((sum, val) => sum + val, 0);
+
+        const row: TableRow = {
+            branch: data.branchName,
+            branchId: branchId,
+            monthLabel: '',
+            january: formatRm(data.months[0]),
+            february: formatRm(data.months[1]),
+            march: formatRm(data.months[2]),
+            april: formatRm(data.months[3]),
+            may: formatRm(data.months[4]),
+            june: formatRm(data.months[5]),
+            july: formatRm(data.months[6]),
+            total: formatRm(rowTotal),
+            color: data.color, // <-- FIX: Ensure this is correctly set
+        };
+
+        tableData.push(row);
+
+        // Accumulate totals
+        for (let i = 0; i < 7; i++) {
+            monthTotals[i] += data.months[i];
+        }
+        monthTotals[7] += rowTotal;
+    });
+
+    // Create totals row
+    const totalsRow: TableRow = {
+        branch: 'Total',
+        monthLabel: '',
+        january: formatRm(monthTotals[0]),
+        february: formatRm(monthTotals[1]),
+        march: formatRm(monthTotals[2]),
+        april: formatRm(monthTotals[3]),
+        may: formatRm(monthTotals[4]),
+        june: formatRm(monthTotals[5]),
+        july: formatRm(monthTotals[6]),
+        total: formatRm(monthTotals[7]),
+    };
+
+    return { tableData, totalsRow };
+};
+
+const OutstandingAmountChart = () => (
+    <div className="panel flex justify-center items-center h-full min-h-[340px]">
+        <p className="text-gray-500">Outstanding Amount Chart Placeholder (Zone-Specific Data Integration Required)</p>
+    </div>
 );
 
 // ============================================================
@@ -69,9 +173,8 @@ export default function ZoneDetailsDashboard() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    // The name of the zone (e.g., "HILL PARK")
+    // Zone identification
     const zoneName = searchParams.get('name') || '';
-    // The slug for URL purposes (e.g., "hill-park")
     const zoneSlug = params.slug as string;
 
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
@@ -82,17 +185,17 @@ export default function ZoneDetailsDashboard() {
     // ============================================================
     const [loading, setLoading] = useState(true);
 
-    // Zone-Specific System Info
+    // System Info
     const [zoneSystemInfo, setZoneSystemInfo] = useState<ZoneSystemInfo | null>(null);
     const [stats, setStats] = useState<StatCardData[]>([]);
 
-    // Zone-Specific Financial Data
+    // Financial Data
     const [zoneFinancialData, setZoneFinancialData] = useState<ProcessedZoneFinancialData | null>(null);
     const [availableYears, setAvailableYears] = useState<string[]>([]);
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [chartSeries, setChartSeries] = useState<any[]>([]);
 
-    // Summary Bar Totals
+    // Totals
     const [zoneTotals, setZoneTotals] = useState({
         revenue: 0,
         cost: 0,
@@ -100,23 +203,53 @@ export default function ZoneDetailsDashboard() {
         profitMargin: '0.00',
     });
 
-    // Category Chart Data
-    const [incomeCategoryChartData, setIncomeCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
-    const [costCategoryChartData, setCostCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
-    const [expenseCategoryChartData, setExpenseCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
+    // Category Charts
+    const [incomeCategoryChartData, setIncomeCategoryChartData] = useState<{ labels: string[]; series: number[] }>({
+        labels: [],
+        series: [],
+    });
+    const [costCategoryChartData, setCostCategoryChartData] = useState<{ labels: string[]; series: number[] }>({
+        labels: [],
+        series: [],
+    });
+    const [expenseCategoryChartData, setExpenseCategoryChartData] = useState<{ labels: string[]; series: number[] }>({
+        labels: [],
+        series: [],
+    });
 
-    // Year selectors for category charts
+    // Company Financial Data (Zone Financial Pie)
+    const [zoneFinancialPieData, setZoneFinancialPieData] = useState<{ labels: string[]; series: number[] }>({
+        labels: [],
+        series: [],
+    });
+
+    // Year selectors
     const [incomeCategorySelectedYear, setIncomeCategorySelectedYear] = useState<string>('');
     const [costCategorySelectedYear, setCostCategorySelectedYear] = useState<string>('');
     const [expenseCategorySelectedYear, setExpenseCategorySelectedYear] = useState<string>('');
+    const [zoneFinancialPieYear, setZoneFinancialPieYear] = useState<string>('');
+
+    // Branch Comparison Data
+    const [branchComparisonData, setBranchComparisonData] = useState<{
+        categories: string[];
+        series: any[];
+    }>({ categories: [], series: [] });
+    const [branchComparisonYear, setBranchComparisonYear] = useState<string>('');
+
+    // Outstanding Amount Table
+    const [outstandingAmountData, setOutstandingAmountData] = useState<TableRow[]>([]);
+    const [outstandingAmountTotals, setOutstandingAmountTotals] = useState<TableRow>(
+        calculateOutstandingAmountsByBranch([], [], 0).totalsRow, // Default empty totals
+    );
+    const [outstandingTableYear, setOutstandingTableYear] = useState<string>('');
+
+    // Raw data
+    const [systemBranches, setSystemBranches] = useState<any[]>([]);
 
     // ============================================================
     // LIFECYCLE & DATA FETCHING
     // ============================================================
 
-    /**
-     * Initial data fetch effect
-     */
     useEffect(() => {
         if (zoneName) {
             fetchZoneDashboardData(zoneName);
@@ -125,64 +258,65 @@ export default function ZoneDetailsDashboard() {
         }
     }, [zoneName]);
 
-    /**
-     * Update charts when selected year or processed data changes
-     */
+    // Initial chart and state setup once data is processed
     useEffect(() => {
-        if (zoneFinancialData && selectedYear) {
-            updateZoneChartsForYear(selectedYear);
-        }
-    }, [selectedYear, zoneFinancialData]);
+        if (zoneFinancialData && zoneFinancialData.years.length > 0 && systemBranches.length > 0) {
+            const latestYear = zoneFinancialData.years[0];
 
-    /**
-     * Update category charts when initial data loads
-     */
-    useEffect(() => {
-        if (zoneFinancialData && availableYears.length > 0) {
-            const latestYear = availableYears[0];
-
-            // Set initial year state for all charts
+            // Set all initial year states
             setSelectedYear(latestYear);
             setIncomeCategorySelectedYear(latestYear);
             setCostCategorySelectedYear(latestYear);
             setExpenseCategorySelectedYear(latestYear);
-
-            // Update category charts initially
-            if (zoneFinancialData.zoneBranches.length > 0) {
-                updateIncomeCategoryChart(zoneFinancialData.zoneBranches, latestYear);
-                updateCostCategoryChart(zoneFinancialData.zoneBranches, latestYear);
-                updateExpenseCategoryChart(zoneFinancialData.zoneBranches, latestYear);
-            }
+            setZoneFinancialPieYear(latestYear);
+            setBranchComparisonYear(latestYear);
+            setOutstandingTableYear(latestYear);
         }
-    }, [zoneFinancialData, availableYears]);
+    }, [zoneFinancialData, systemBranches]);
+
+    // Handlers for year changes: Category Pie Charts, Financial Pie, Branch Comparison, Outstanding Table
+    useEffect(() => {
+        if (!zoneFinancialData) return;
+        const { zoneBranches } = zoneFinancialData;
+
+        // Update charts/tables based on their specific year state
+        if (zoneBranches.length > 0) {
+            // Check if selected year is part of the zone's available years before attempting update
+            if (selectedYear) updateZoneChartsForYear(selectedYear); // Monthly Area Chart & Totals
+            if (incomeCategorySelectedYear) updateIncomeCategoryChart(zoneBranches, incomeCategorySelectedYear);
+            if (costCategorySelectedYear) updateCostCategoryChart(zoneBranches, costCategorySelectedYear);
+            if (expenseCategorySelectedYear) updateExpenseCategoryChart(zoneBranches, expenseCategorySelectedYear);
+            if (zoneFinancialPieYear) updateZoneFinancialPieChart(zoneBranches, zoneFinancialPieYear);
+            if (branchComparisonYear) updateBranchComparisonChart(zoneBranches, systemBranches, branchComparisonYear);
+            if (outstandingTableYear) updateOutstandingAmountTable(zoneBranches, systemBranches, parseInt(outstandingTableYear));
+        }
+    }, [selectedYear, incomeCategorySelectedYear, costCategorySelectedYear, expenseCategorySelectedYear, zoneFinancialPieYear, branchComparisonYear, outstandingTableYear]);
 
     /**
-     * Main function to fetch all dashboard data and process it for the selected zone
+     * Main function to fetch all dashboard data
      */
     const fetchZoneDashboardData = async (zone: string) => {
         try {
             setLoading(true);
 
-            // 1. Fetch raw data from APIs
             const [systemInfoResponse, financeSummaryResponse] = await Promise.all([dashboardService.getSystemInfo(), getFinanceSummary()]);
 
-            const systemBranches = systemInfoResponse?.data?.branches || [];
+            const allSystemBranches = systemInfoResponse?.data?.branches || [];
             const financeBranches = financeSummaryResponse?.data?.branches || [];
 
-            // 2. Process System Info (KPI Cards)
-            const zoneInfo = calculateZoneSystemInfo(systemBranches, zone);
+            setSystemBranches(allSystemBranches);
+
+            // Calculate zone system info
+            const zoneInfo = calculateZoneSystemInfo(allSystemBranches, zone);
             setZoneSystemInfo(zoneInfo);
             updateStatCards(zoneInfo);
 
-            // 3. Process Financial Data (Charts)
-            const processedFinancials = processZoneFinancialData(financeBranches, zone);
+            // Process zone financial data
+            const processedFinancials = processZoneFinancialData(financeBranches, allSystemBranches, zone);
             setZoneFinancialData(processedFinancials);
-
-            // Set available years for filters
             setAvailableYears(processedFinancials.years);
         } catch (error) {
             console.error('Failed to fetch zone dashboard data:', error);
-            // Fallback stats on error
             updateStatCards(getDefaultZoneInfo());
         } finally {
             setLoading(false);
@@ -190,12 +324,9 @@ export default function ZoneDetailsDashboard() {
     };
 
     // ============================================================
-    // CHART & STATE UPDATE FUNCTIONS
+    // CHART UPDATE FUNCTIONS
     // ============================================================
 
-    /**
-     * Updates Stat Cards based on zone system info.
-     */
     const updateStatCards = (info: ZoneSystemInfo) => {
         const updatedStats: StatCardData[] = [
             {
@@ -208,7 +339,7 @@ export default function ZoneDetailsDashboard() {
             },
             {
                 title: 'Total Schools',
-                value: info.totalSchools.toLocaleString() || '0',
+                value: info.totalSchools.toLocaleString(),
                 valueSize: 'xl',
                 gradient: 'bg-gradient-to-r from-violet-500 to-violet-400',
                 icon: <Image src="/assets/images/icons/school.svg" alt="school" width={35} height={35} className="brightness-0 invert opacity-90" />,
@@ -216,7 +347,7 @@ export default function ZoneDetailsDashboard() {
             },
             {
                 title: 'Total Students',
-                value: info.totalStudents.toLocaleString() || '0',
+                value: info.totalStudents.toLocaleString(),
                 valueSize: 'xl',
                 gradient: 'bg-gradient-to-r from-blue-500 to-blue-400',
                 icon: <Image src="/assets/images/icons/students.svg" alt="student" width={35} height={35} className="brightness-0 invert opacity-90" />,
@@ -224,7 +355,7 @@ export default function ZoneDetailsDashboard() {
             },
             {
                 title: 'Total Staff',
-                value: info.totalStaff.toLocaleString() || '0',
+                value: info.totalStaff.toLocaleString(),
                 valueSize: 'xl',
                 gradient: 'bg-gradient-to-b from-[#EF4649] to-[#F9797B]',
                 icon: <Image src="/assets/images/icons/staff.svg" alt="staff" width={35} height={35} className="brightness-0 invert opacity-90" />,
@@ -234,125 +365,115 @@ export default function ZoneDetailsDashboard() {
         setStats(updatedStats);
     };
 
-    /**
-     * Update monthly chart data and totals for a specific year in the zone.
-     */
     const updateZoneChartsForYear = (year: string, data: ProcessedZoneFinancialData | null = null) => {
         const processedData = data || zoneFinancialData;
         if (!processedData) return;
 
-        // Get chart series (monthly Revenue and Cost for the zone)
-        const series = getZoneChartSeriesForYear(processedData, year);
+        const series = getZoneChartSeriesForYear(processedData, year, true, true, false);
         setChartSeries(series);
 
-        // Calculate and set yearly totals for the Summary Bar
         const totals = calculateZoneYearTotals(processedData, year);
         setZoneTotals(totals);
     };
 
-    /**
-     * Update Income Category chart for the zone.
-     */
     const updateIncomeCategoryChart = (zoneBranches: Branch[], year: string) => {
         const categoryData = processZoneCategoryTotalsForYear(zoneBranches, year);
         setIncomeCategoryChartData(categoryData);
     };
 
-    /**
-     * Update Cost Category chart for the zone.
-     */
     const updateCostCategoryChart = (zoneBranches: Branch[], year: string) => {
         const expenseData = processZoneExpenseCategoryTotalsForYear(zoneBranches, year);
         setCostCategoryChartData(expenseData);
     };
 
-    /**
-     * Update Expense Category chart for the zone.
-     */
     const updateExpenseCategoryChart = (zoneBranches: Branch[], year: string) => {
         const expenseData = processZoneExpenseCategoryTotalsForYear(zoneBranches, year);
         setExpenseCategoryChartData(expenseData);
     };
 
+    const updateZoneFinancialPieChart = (zoneBranches: Branch[], year: string) => {
+        const financialData = processZoneCompanyFinancialsByYear(zoneBranches, year);
+        setZoneFinancialPieData(financialData);
+    };
+
+    const updateBranchComparisonChart = (zoneBranches: Branch[], allSystemBranches: any[], year: string) => {
+        const comparisonData = getZoneBranchComparisonData(zoneBranches, allSystemBranches, year);
+        setBranchComparisonData(comparisonData);
+    };
+
+    const updateOutstandingAmountTable = (zoneBranches: Branch[], allSystemBranches: any[], year: number) => {
+        const { tableData, totalsRow } = calculateOutstandingAmountsByBranch(zoneBranches, allSystemBranches, year);
+        setOutstandingAmountData(tableData);
+        setOutstandingAmountTotals(totalsRow);
+    };
+
     // ============================================================
-    // COMPUTED VALUES (Replicate Finance Dashboard's yearly trends)
+    // COMPUTED VALUES
     // ============================================================
 
-    /**
-     * Calculate year-wise totals for the zone's yearly financial overview chart
-     */
     const yearlyFinancialSeries = useMemo(() => {
         if (!zoneFinancialData) return [];
-
-        const years = zoneFinancialData.years;
-        const revenueData: number[] = [];
-        const costData: number[] = [];
-        const profitData: number[] = [];
-
-        years.forEach((year) => {
-            const yearTotals = calculateZoneYearTotals(zoneFinancialData, year);
-            revenueData.push(yearTotals.revenue);
-            costData.push(yearTotals.cost);
-            profitData.push(yearTotals.profit);
-        });
-
-        return [
-            { name: 'Income', data: revenueData },
-            { name: 'Cost', data: costData },
-            { name: 'Profit', data: profitData },
-        ];
+        const result = getZoneYearlyFinancialSeries(zoneFinancialData);
+        // Only return the series part of the result
+        return result && result.series ? result.series : [];
     }, [zoneFinancialData]);
 
-    /**
-     * Calculate latest N years profit data for the zone's profit trend chart.
-     */
     const zoneYearlyProfitData = useMemo(() => {
         if (!zoneFinancialData) return { years: [], profitData: [] };
-
-        const numberOfYears = 5;
-        const latestYears = zoneFinancialData.years.slice(0, numberOfYears).reverse(); // Oldest to newest
-
-        const profitData = latestYears.map((year) => {
-            const yearTotals = calculateZoneYearTotals(zoneFinancialData, year);
-            return yearTotals.profit;
-        });
-
-        return { years: latestYears, profitData };
+        return getLatestYearsZoneProfitData(zoneFinancialData, 5);
     }, [zoneFinancialData]);
 
     // ============================================================
     // EVENT HANDLERS
     // ============================================================
 
+    /**
+     * Handle year change for monthly financial overview chart
+     */
     const handleYearChange = (year: string) => {
         setSelectedYear(year);
     };
 
-    const handleCategoryYearChange = (year: string, setter: React.Dispatch<React.SetStateAction<string>>, updater: (branches: Branch[], year: string) => void) => {
-        setter(year);
-        if (zoneFinancialData) {
-            updater(zoneFinancialData.zoneBranches, year);
-        }
-    };
+    const handleIncomeCategoryYearChange = (year: string) => setIncomeCategorySelectedYear(year);
+    const handleCostCategoryYearChange = (year: string) => setCostCategorySelectedYear(year);
+    const handleExpenseCategoryYearChange = (year: string) => setExpenseCategorySelectedYear(year);
+    const handleZoneFinancialPieYearChange = (year: string) => setZoneFinancialPieYear(year);
+    const handleBranchComparisonYearChange = (year: string) => setBranchComparisonYear(year);
+    const handleOutstandingTableYearChange = (year: string) => setOutstandingTableYear(year);
 
-    // Placeholder for table cell click (no zone breakdown needed, maybe navigate to branch?)
     const handleTableClick = (row: TableRow, columnKey: string) => {
         if (columnKey === 'branch') {
-            // Logic to navigate to branch-specific dashboard
-            console.log('Navigating to Branch dashboard:', row.branch);
+            console.log('Navigate to branch dashboard:', row.branch);
+            // router.push(`/dashboard/branch/${row.branchId}`);
         }
     };
 
     // ============================================================
-    // UTILITY/FALLBACK
+    // TABLE CONFIGURATION
     // ============================================================
 
-    const getDefaultZoneInfo = (): ZoneSystemInfo => ({
-        totalBranches: 0,
-        totalSchools: 0,
-        totalStudents: 0,
-        totalStaff: 0,
-    });
+    const outstandingAmountColumns: TableColumn[] = [
+        { key: 'branch', label: 'Branch', align: 'left', width: '200px', clickable: true },
+        { key: 'monthLabel', label: `Outstanding Amount (${outstandingTableYear})`, align: 'center', width: '200px' },
+        { key: 'january', label: 'Jan', align: 'center' },
+        { key: 'february', label: 'Feb', align: 'center' },
+        { key: 'march', label: 'Mar', align: 'center' },
+        { key: 'april', label: 'Apr', align: 'center' },
+        { key: 'may', label: 'May', align: 'center' },
+        { key: 'june', label: 'Jun', align: 'center' },
+        { key: 'july', label: 'Jul', align: 'center' },
+        { key: 'total', label: 'Total', align: 'center' },
+    ];
+
+    const outstandingAmountConfig: DataTableConfig = {
+        title: `Outstanding Amount by Branch in ${zoneName}`,
+        showColorIndicator: true, // This enables the color indicator
+        showTotalRow: true,
+        showYearFilter: true,
+        yearOptions: availableYears,
+        selectedYear: outstandingTableYear,
+        onYearChange: handleOutstandingTableYearChange,
+    };
 
     // ============================================================
     // LOADING STATE
@@ -368,10 +489,11 @@ export default function ZoneDetailsDashboard() {
     }
 
     // ============================================================
-    // RENDER - ZONE DASHBOARD
+    // RENDER
     // ============================================================
 
     const chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const zoneYearlyChartLabels = getZoneYearlyFinancialSeries(zoneFinancialData!)?.years || [];
 
     return (
         <>
@@ -399,24 +521,13 @@ export default function ZoneDetailsDashboard() {
                     {/* ROW 1 - KPI STAT CARDS: Total Branches, Schools, Students, Staff in Zone */}
                     <StatsGrid stats={stats} isRtl={isRtl} onViewReport={() => {}} onEditReport={() => {}} />
 
-                    {/* Summary Bar for current selected year */}
-                    {/* <SummaryBar
-                        title={`Financial Summary for ${selectedYear}`}
-                        revenue={zoneTotals.revenue}
-                        cost={zoneTotals.cost}
-                        profit={zoneTotals.profit}
-                        profitMargin={zoneTotals.profitMargin}
-                        iconRevenue={<IconDollar />}
-                        iconCost={<IconExpense />}
-                        iconProfit={<IconProfit />}
-                    /> */}
-
-                    {/* ROW 2 - MONTHLY FINANCIAL OVERVIEW & BRANCH FINANCIAL OVERVIEW (Replaces Company Pie Chart) */}
+                    {/* ROW 2 - MONTHLY FINANCIAL OVERVIEW & ZONE FINANCIAL PIE CHART */}
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
                         {/* Monthly Financial Overview - 2/3 width */}
                         <div className="lg:col-span-2">
                             <AreaChart
                                 title={`Monthly Financial Overview (${selectedYear})`}
+                                showDropdown={false}
                                 showYearFilter={true}
                                 yearOptions={availableYears}
                                 series={chartSeries}
@@ -434,20 +545,23 @@ export default function ZoneDetailsDashboard() {
                             />
                         </div>
 
-                        {/* Branch Financial Overview - 1/3 width (Replaces Company Pie Chart) */}
+                        {/* Zone Financial Overview - 1/3 width (Income/Cost/Profit Pie) */}
                         <div className="lg:col-span-1">
-                            {/* NOTE: You'll need a service function to process branch-wise income/cost/profit for this zone and year */}
                             <PieChart
-                                title="Branch Financial Breakdown"
-                                series={[/* branch profit series */ 100000, 50000, 25000]}
-                                labels={['Branch A', 'Branch B', 'Branch C']}
+                                title={`${zoneName} Financial Overview`}
+                                series={zoneFinancialPieData.series}
+                                labels={zoneFinancialPieData.labels}
                                 height={340}
                                 showDropdown={false}
                                 showYearFilter={true}
                                 yearOptions={availableYears}
-                                selectedYear={selectedYear}
-                                onYearChange={handleYearChange} // Reuse handler
-                                colors={['#00ab55', '#e7515a', '#4361ee']}
+                                selectedYear={zoneFinancialPieYear}
+                                onYearChange={handleZoneFinancialPieYearChange}
+                                dropdownOptions={['View Report', 'Export Data', 'Share Chart']}
+                                onDropdownSelect={(option) => {
+                                    console.log('Selected:', option);
+                                }}
+                                colors={['#00ab55', '#e7515a', '#4361ee']} // Green, Red, Blue
                             />
                         </div>
                     </div>
@@ -459,11 +573,12 @@ export default function ZoneDetailsDashboard() {
                             chartTitle="Income By Category (Zone)"
                             series={incomeCategoryChartData.series}
                             labels={incomeCategoryChartData.labels}
+                            colors={['#00ab55', '#4361ee', '#805dca', '#e2a03f', '#e7515a', '#2196f3']}
                             height={340}
                             showYearFilter={true}
                             yearOptions={availableYears}
                             selectedYear={incomeCategorySelectedYear}
-                            onYearChange={(year) => handleCategoryYearChange(year, setIncomeCategorySelectedYear, updateIncomeCategoryChart)}
+                            onYearChange={handleIncomeCategoryYearChange}
                             showDropdown={false}
                         />
 
@@ -472,11 +587,12 @@ export default function ZoneDetailsDashboard() {
                             chartTitle="Cost By Category (Zone)"
                             series={costCategoryChartData.series}
                             labels={costCategoryChartData.labels}
+                            colors={['#e7515a', '#e2a03f', '#805dca', '#4361ee', '#2196f3', '#00ab55']}
                             height={340}
                             showYearFilter={true}
                             yearOptions={availableYears}
                             selectedYear={costCategorySelectedYear}
-                            onYearChange={(year) => handleCategoryYearChange(year, setCostCategorySelectedYear, updateCostCategoryChart)}
+                            onYearChange={handleCostCategoryYearChange}
                             showDropdown={false}
                         />
 
@@ -491,7 +607,7 @@ export default function ZoneDetailsDashboard() {
                                 showYearFilter={true}
                                 yearOptions={availableYears}
                                 selectedYear={expenseCategorySelectedYear}
-                                onYearChange={(year) => handleCategoryYearChange(year, setExpenseCategorySelectedYear, updateExpenseCategoryChart)}
+                                onYearChange={handleExpenseCategoryYearChange}
                             />
                         </div>
                     </div>
@@ -500,7 +616,21 @@ export default function ZoneDetailsDashboard() {
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
                         {/* Yearly Financial Overview - 2/3 width */}
                         <div className="lg:col-span-2">
-                            <AreaChart title={`${zoneName} Yearly Financial Overview`} showYearFilter={false} series={yearlyFinancialSeries} labels={zoneFinancialData?.years || []} height={325} />
+                            <AreaChart
+                                title={`${zoneName} Yearly Financial Overview`}
+                                showYearFilter={false}
+                                series={yearlyFinancialSeries}
+                                labels={zoneYearlyChartLabels}
+                                height={325}
+                                yAxisFormatter={(value: number) => {
+                                    if (value >= 1000000) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    } else if (value >= 1000) {
+                                        return (value / 1000).toFixed(0) + 'K';
+                                    }
+                                    return value.toFixed(0);
+                                }}
+                            />
                         </div>
 
                         {/* Yearly Profit Trend - 1/3 width */}
@@ -519,39 +649,39 @@ export default function ZoneDetailsDashboard() {
 
                     {/* ROW 5 - BRANCH BAR CHART (Replaces Zone Bar Chart) */}
                     <div className="mb-6">
-                        {/* NOTE: You'll need a service function to process branch-wise income/cost/profit for this zone and year */}
-                        <ZoneBar // Reusing ZoneBar component for Branch data
-                            chartTitle={`Branch Financial Breakdown (${selectedYear})`}
-                            series={[
-                                { name: 'INCOME', data: [150000, 120000, 90000] },
-                                { name: 'EXPENSE', data: [50000, 40000, 30000] },
-                                { name: 'PROFIT', data: [100000, 80000, 60000] },
-                            ]}
-                            categories={['Branch X', 'Branch Y', 'Branch Z']}
-                            colors={['#10b981', '#ef4444', '#8b5cf6']}
-                            negativeColor="#FF4757"
-                            showYearFilter={true}
-                            yearOptions={availableYears}
-                            onYearSelect={handleYearChange}
-                        />
+                        {branchComparisonData.categories.length > 0 ? (
+                            <ZoneBar // Reusing ZoneBar component for Branch data
+                                chartTitle={`Branch Financial Breakdown (${branchComparisonYear})`}
+                                series={branchComparisonData.series}
+                                categories={branchComparisonData.categories}
+                                colors={['#10b981', '#ef4444', '#8b5cf6']}
+                                negativeColor="#FF4757"
+                                showYearFilter={true}
+                                yearOptions={availableYears}
+                                onYearSelect={handleBranchComparisonYearChange}
+                            />
+                        ) : (
+                            <div className="panel p-5">
+                                <div className="flex items-center justify-center">
+                                    <span className="text-gray-500">
+                                        No Branch Financial Data Available for {zoneName} in {branchComparisonYear}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* ROW 6 - OUTSTANDING AMOUNT TABLE (Zone/Branch Specific) */}
                     <div className="mb-6">
-                        {/* NOTE: This data needs to be filtered/fetched for the specific zone */}
                         <DataTable
-                            columns={[
-                                { key: 'branch', label: 'Branch', align: 'left', width: '200px', clickable: true },
-                                { key: 'total', label: 'Outstanding Total', align: 'center' },
-                                // Add monthly columns if needed
-                            ]}
-                            data={[
-                                { branch: 'Branch X School 1', total: 'RM 10,000', color: 'blue' },
-                                { branch: 'Branch Y School 2', total: 'RM 5,000', color: 'purple' },
-                            ]}
-                            totals={{ branch: 'Total', total: 'RM 15,000' }}
-                            config={{ title: `Outstanding Amount by Branch in ${zoneName}`, showColorIndicator: true, showTotalRow: true }}
+                            columns={outstandingAmountColumns}
+                            data={outstandingAmountData}
+                            totals={outstandingAmountTotals}
+                            config={outstandingAmountConfig}
                             isRtl={isRtl}
+                            onViewReport={() => {}}
+                            onEditReport={() => {}}
+                            onDeleteReport={() => {}}
                             onCellClick={handleTableClick} // Use branch click handler
                         />
                     </div>

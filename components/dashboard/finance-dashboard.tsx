@@ -69,6 +69,7 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
             months: number[];
             total: number;
             color: string;
+            zoneName: string; // Store zoneName separately
         }
     >();
 
@@ -76,15 +77,19 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
     const colors = ['blue', 'purple', 'orange', 'green', 'red', 'cyan', 'pink', 'yellow'];
     let colorIndex = 0;
 
-    // Group branches by zone
+    // Group branches by zone code, but store zoneName
     systemBranches.forEach((sysBranch: any) => {
-        const zoneName = sysBranch.zone?.trim();
-        if (!zoneName) return;
-        if (!zoneMap.has(zoneName)) {
-            zoneMap.set(zoneName, {
+        const zoneCode = sysBranch.zone?.trim();
+        const zoneName = sysBranch.zoneName?.trim();
+
+        if (!zoneCode || !zoneName) return;
+
+        if (!zoneMap.has(zoneCode)) {
+            zoneMap.set(zoneCode, {
                 months: new Array(12).fill(0),
                 total: 0,
                 color: colors[colorIndex % colors.length],
+                zoneName: zoneName, // Store the actual zone name
             });
             colorIndex++;
         }
@@ -94,8 +99,9 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
     branches.forEach((branch: any) => {
         const sysBranch = systemBranches.find((sb: any) => sb._id === branch.branch_id);
         if (!sysBranch?.zone) return;
-        const zoneName = sysBranch.zone.trim();
-        const zoneData = zoneMap.get(zoneName);
+
+        const zoneCode = sysBranch.zone.trim();
+        const zoneData = zoneMap.get(zoneCode);
         if (!zoneData) return;
 
         // Find revenue data for the selected year
@@ -115,11 +121,13 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
     const tableData: TableRow[] = [];
     const monthTotals = new Array(8).fill(0); // 7 months + total
 
-    zoneMap.forEach((data, zoneName) => {
+    zoneMap.forEach((data, zoneCode) => {
         const rowTotal = data.months.slice(0, 7).reduce((sum, val) => sum + val, 0);
         data.total = rowTotal;
+
         const row: TableRow = {
-            zone: zoneName,
+            zone: data.zoneName, // Use zoneName instead of zone code
+            zoneCode: zoneCode, // Store zone code for reference if needed
             monthLabel: '',
             january: data.months[0] > 0 ? `RM ${data.months[0].toLocaleString()}` : null,
             february: data.months[1] > 0 ? `RM ${data.months[1].toLocaleString()}` : null,
@@ -131,6 +139,7 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
             total: `RM ${rowTotal.toLocaleString()}`,
             color: data.color,
         };
+
         tableData.push(row);
 
         // Accumulate totals
@@ -156,7 +165,6 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
 
     return { tableData, totalsRow };
 };
-
 // ============================================================
 // ICON COMPONENTS
 // ============================================================
@@ -917,7 +925,7 @@ export default function FinanceDashboard() {
                             <AreaChart
                                 title="Financial Overview"
                                 showYearFilter={true}
-                                yearOptions={financeData?.years || []}
+                                yearOptions={[...(financeData?.years || [])].reverse()}
                                 showDropdown={false}
                                 series={chartSeries}
                                 labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
@@ -1088,6 +1096,7 @@ export default function FinanceDashboard() {
                                 colors={['#10b981', '#ef4444', '#8b5cf6']}
                                 negativeColor="#FF4757"
                                 showYearFilter={true}
+                                showDropdown={false}
                                 yearOptions={dashboardMetrics?.years.map(String) || []}
                                 onYearSelect={handleZoneYearChange}
                                 onDropdownSelect={(option) => console.log(option)}

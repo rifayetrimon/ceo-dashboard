@@ -3,6 +3,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
+import Dropdown from '@/components/dropdown';
 
 // Types
 export interface TableColumn {
@@ -27,10 +28,10 @@ export interface DataTableConfig {
     showTotalRow?: boolean;
     totalRowColor?: string;
     totalRowColorDark?: string;
-    showYearFilter?: boolean; // New: Show year filter dropdown
-    yearOptions?: string[]; // New: Available years
-    selectedYear?: string; // New: Currently selected year
-    onYearChange?: (year: string) => void; // New: Year change handler
+    showYearFilter?: boolean;
+    yearOptions?: string[];
+    selectedYear?: string;
+    onYearChange?: (year: string) => void;
 }
 
 interface DataTableProps {
@@ -77,9 +78,9 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
         }
     };
 
-    const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleYearChange = (year: string) => {
         if (config.onYearChange) {
-            config.onYearChange(e.target.value);
+            config.onYearChange(year);
         }
     };
 
@@ -91,21 +92,30 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
 
                 {/* Year Filter Dropdown */}
                 {config.showYearFilter && config.yearOptions && config.yearOptions.length > 0 && (
-                    <div className="flex items-center gap-2">
-                        <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Year:</label>
-                        <select
-                            value={config.selectedYear || ''}
-                            onChange={handleYearChange}
-                            className={`form-select rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                                isDark ? 'border-gray-600 bg-gray-800 text-white hover:border-gray-500' : 'border-gray-300 bg-white text-gray-900 hover:border-gray-400'
-                            }`}
+                    <div className="dropdown">
+                        <Dropdown
+                            offset={[0, 5]}
+                            placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                            btnClassName="btn btn-sm btn-outline-primary dropdown-toggle"
+                            button={
+                                <span className="flex items-center">
+                                    {config.selectedYear || 'Select Year'}
+                                    <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </span>
+                            }
                         >
-                            {config.yearOptions.map((year) => (
-                                <option key={year} value={year}>
-                                    {year}
-                                </option>
-                            ))}
-                        </select>
+                            <ul className="max-h-60 overflow-y-auto">
+                                {config.yearOptions.map((year) => (
+                                    <li key={year}>
+                                        <button type="button" onClick={() => handleYearChange(year)} className={`w-full ${config.selectedYear === year ? 'bg-primary/10 text-primary' : ''}`}>
+                                            {year}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </Dropdown>
                     </div>
                 )}
             </div>

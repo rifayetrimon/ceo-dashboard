@@ -8,6 +8,7 @@ import Dropdown from '@/components/dropdown';
 import SmallDropdown from '@/components/small-dropdown';
 import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 import IconCaretDown from '@/components/icon/icon-caret-down';
+import { reverse } from 'lodash';
 
 interface SeriesData {
     name: string;
