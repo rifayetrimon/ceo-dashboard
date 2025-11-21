@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import Dropdown from '@/components/dropdown';
-import SmallDropdown from '@/components/small-dropdown';
+import Dropdown from '@/components/dropdown'; // Use the standard Dropdown
+import SmallDropdown from '@/components/small-dropdown'; // Still imported, but we'll replace its usage for the year filter
 import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 import IconCaretDown from '@/components/icon/icon-caret-down';
 
@@ -314,41 +314,43 @@ export default function ZoneBar({
         <div className={`panel h-full p-0 ${className}`}>
             {/* Header */}
             <div className="mb-5 flex items-start justify-between border-b border-white-light p-5 dark:border-[#1b2e4b] dark:text-white-light">
-                <h5 className="text-lg font-semibold">{chartTitle}</h5>
+                <h5 className="text-lg font-semibold">
+                    {chartTitle}
+                    {showYearFilter && selectedYear && <span className="ml-2">({selectedYear})</span>}
+                </h5>
 
                 <div className="flex items-center gap-2">
-                    {/* Year Filter Dropdown */}
-                    {showYearFilter && (
-                        <SmallDropdown
-                            offset={[0, 5]}
-                            placement={isRtl ? 'bottom-start' : 'bottom-end'}
-                            btnClassName={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:border-primary ${
-                                isDark ? 'border-gray-600 bg-gray-800 text-white hover:bg-gray-700' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                            }`}
-                            button={
-                                <>
-                                    <span>{selectedYear}</span>
-                                    <IconCaretDown className="h-3.5 w-3.5" />
-                                </>
-                            }
-                        >
-                            {yearOptions.map((year, index) => (
-                                <li key={index}>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleYearSelect(year)}
-                                        className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                            isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-gray-900'
-                                        } ${selectedYear === year ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
-                                    >
-                                        {year}
-                                    </button>
-                                </li>
-                            ))}
-                        </SmallDropdown>
+                    {/* Year Filter Dropdown - Updated to use the standard Dropdown component with AreaChart styling */}
+                    {showYearFilter && yearOptions.length > 0 && (
+                        <div className="dropdown">
+                            <Dropdown
+                                offset={[0, 5]}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                // Applying the style from AreaChart for consistency
+                                btnClassName="btn btn-sm btn-outline-primary dropdown-toggle"
+                                button={
+                                    <span className="flex items-center">
+                                        {selectedYear || 'Select Year'}
+                                        <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                }
+                            >
+                                <ul className="max-h-60 overflow-y-auto">
+                                    {yearOptions.map((year) => (
+                                        <li key={year}>
+                                            <button type="button" onClick={() => handleYearSelect(year)} className={`w-full ${selectedYear === year ? 'bg-primary/10 text-primary' : ''}`}>
+                                                {year}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Dropdown>
+                        </div>
                     )}
 
-                    {/* Dropdown Menu */}
+                    {/* Dropdown Menu (Three dots) - Uses the standard Dropdown and IconHorizontalDots */}
                     {showDropdown && (
                         <div className="dropdown">
                             <Dropdown

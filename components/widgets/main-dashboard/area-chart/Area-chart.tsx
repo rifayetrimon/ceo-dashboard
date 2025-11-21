@@ -5,10 +5,7 @@ import ReactApexChart from 'react-apexcharts';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import Dropdown from '@/components/dropdown';
-import SmallDropdown from '@/components/small-dropdown';
 import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
-import IconCaretDown from '@/components/icon/icon-caret-down';
-import { reverse } from 'lodash';
 
 interface SeriesData {
     name: string;
@@ -121,13 +118,8 @@ export default function AreaChart({
 
         // Less than 1M - use K scale with professional intervals
         if (maxValue < 1000000) {
-            // Round max up to nearest 100K
             max = yAxisMax !== undefined ? yAxisMax : Math.ceil(maxValue / 100000) * 100000;
-
-            // If max is less than 100K, cap at 100K
             if (max < 100000) max = 100000;
-
-            // Ensure minimum of 1M for better visualization
             if (max < 1000000) max = 1000000;
 
             ticks = tickAmount || 5;
@@ -141,13 +133,8 @@ export default function AreaChart({
         }
         // Between 1M and 2M
         else if (maxValue >= 1000000 && maxValue < 2000000) {
-            // Round up to nearest 100K
             max = yAxisMax !== undefined ? yAxisMax : Math.ceil(maxValue / 100000) * 100000;
-
-            // Add 10% padding
             max = Math.ceil((max * 1.1) / 100000) * 100000;
-
-            // Ensure it's at least 2M for proper scale
             if (max < 2000000) max = 2000000;
 
             ticks = tickAmount || 5;
@@ -162,10 +149,7 @@ export default function AreaChart({
         }
         // Greater than 2M
         else {
-            // Round up to nearest 500K
             max = yAxisMax !== undefined ? yAxisMax : Math.ceil(maxValue / 500000) * 500000;
-
-            // Add 10% padding
             max = Math.ceil((max * 1.1) / 500000) * 500000;
 
             ticks = tickAmount || 5;
@@ -299,7 +283,7 @@ export default function AreaChart({
                 offsetX: -2,
             },
             itemMargin: {
-                horizontal: 20, // 20px gap between legend items
+                horizontal: 20,
                 vertical: 5,
             },
         },
@@ -349,50 +333,50 @@ export default function AreaChart({
 
     return (
         <div className={`panel h-full ${colSpan}`}>
-            <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <h5 className="text-lg font-semibold dark:text-white-light">
-                    {title} {showYearFilter && <span className="text-gray-500 dark:text-gray-400">({selectedYear})</span>}
+            {/* Header - Same style as PieChart */}
+            <div className="mb-5 flex items-center justify-between dark:text-white-light">
+                <h5 className="text-lg font-semibold">
+                    {title}
+                    {showYearFilter && selectedYear && <span className="ml-2">({selectedYear})</span>}
                 </h5>
 
-                <div className="flex items-center gap-2">
-                    {/* Year Filter Dropdown */}
-                    {showYearFilter && (
-                        <SmallDropdown
-                            offset={[0, 5]}
-                            placement={isRtl ? 'bottom-start' : 'bottom-end'}
-                            btnClassName={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition hover:border-primary ${
-                                isDark ? 'border-gray-600 bg-gray-800 text-white hover:bg-gray-700' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                            }`}
-                            button={
-                                <>
-                                    <span>{selectedYear}</span>
-                                    <IconCaretDown className="h-3.5 w-3.5" />
-                                </>
-                            }
-                        >
-                            {yearOptions.map((year, index) => (
-                                <li key={index}>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleYearSelect(year)}
-                                        className={`block w-full px-4 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                            isDark ? 'text-gray-200 hover:text-white' : 'text-gray-700 hover:text-gray-900'
-                                        } ${selectedYear === year ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
-                                    >
-                                        {year}
-                                    </button>
-                                </li>
-                            ))}
-                        </SmallDropdown>
+                <div className="flex items-center gap-3">
+                    {/* Year Filter Dropdown - Same style as PieChart */}
+                    {showYearFilter && yearOptions.length > 0 && (
+                        <div className="dropdown">
+                            <Dropdown
+                                offset={[0, 5]}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                btnClassName="btn btn-sm btn-outline-primary dropdown-toggle"
+                                button={
+                                    <span className="flex items-center">
+                                        {selectedYear || 'Select Year'}
+                                        <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                }
+                            >
+                                <ul className="max-h-60 overflow-y-auto">
+                                    {yearOptions.map((year) => (
+                                        <li key={year}>
+                                            <button type="button" onClick={() => handleYearSelect(year)} className={`w-full ${selectedYear === year ? 'bg-primary/10 text-primary' : ''}`}>
+                                                {year}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Dropdown>
+                        </div>
                     )}
 
-                    {/* Original Dropdown (Weekly/Monthly/Yearly) */}
+                    {/* Options Dropdown - Same style as PieChart */}
                     {showDropdown && dropdownOptions && dropdownOptions.length > 0 && (
                         <div className="dropdown">
                             <Dropdown
                                 offset={[0, 1]}
-                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                button={<IconHorizontalDots className="text-black/70 hover:!text-primary dark:text-white/70" />}
+                                placement={isRtl ? 'bottom-start' : 'bottom-end'}
+                                button={<IconHorizontalDots className="text-black/70 hover:!text-primary dark:text-white/70 cursor-pointer" />}
                             >
                                 <ul>
                                     {dropdownOptions.map((option, index) => (
@@ -409,6 +393,7 @@ export default function AreaChart({
                 </div>
             </div>
 
+            {/* Chart Area */}
             <div className="relative">
                 <div className="rounded-lg bg-white dark:bg-black">
                     {isMounted ? (
