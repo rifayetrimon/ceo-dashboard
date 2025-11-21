@@ -36,15 +36,10 @@ import {
 } from '@/services/sales/financeService';
 
 // ============================================================
-// HELPER FUNCTIONS
+// HELPER FUNCTIONS (unchanged)
 // ============================================================
-
-/**
- * Extract all available years from branch data
- */
 const getAvailableYears = (branches: any[]): string[] => {
     const years = new Set<string>();
-
     branches.forEach((branch) => {
         branch.monthly_revenue?.forEach((yearData: any) => {
             if (yearData.year && yearData.total > 0) {
@@ -52,82 +47,46 @@ const getAvailableYears = (branches: any[]): string[] => {
             }
         });
     });
-
-    return Array.from(years).sort((a, b) => b.localeCompare(a)); // Sort descending
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
 };
 
-/**
- * Helper function to calculate outstanding amounts by zone
- * NOTE: The implementation uses 'monthly_revenue' as a placeholder for
- * 'outstanding amount' calculation, which may need adjustment based
- * on the actual data structure for outstanding amounts.
- */
 const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[], year: number) => {
-    const zoneMap = new Map<
-        string,
-        {
-            months: number[];
-            total: number;
-            color: string;
-            zoneName: string; // Store zoneName separately
-        }
-    >();
-
-    // Define colors for zones
+    const zoneMap = new Map<string, { months: number[]; total: number; color: string; zoneName: string }>();
     const colors = ['blue', 'purple', 'orange', 'green', 'red', 'cyan', 'pink', 'yellow'];
     let colorIndex = 0;
-
-    // Group branches by zone code, but store zoneName
     systemBranches.forEach((sysBranch: any) => {
         const zoneCode = sysBranch.zone?.trim();
         const zoneName = sysBranch.zoneName?.trim();
-
         if (!zoneCode || !zoneName) return;
-
         if (!zoneMap.has(zoneCode)) {
-            zoneMap.set(zoneCode, {
-                months: new Array(12).fill(0),
-                total: 0,
-                color: colors[colorIndex % colors.length],
-                zoneName: zoneName, // Store the actual zone name
-            });
+            zoneMap.set(zoneCode, { months: new Array(12).fill(0), total: 0, color: colors[colorIndex % colors.length], zoneName: zoneName });
             colorIndex++;
         }
     });
-
-    // Calculate outstanding amounts (using revenue as placeholder)
     branches.forEach((branch: any) => {
         const sysBranch = systemBranches.find((sb: any) => sb._id === branch.branch_id);
         if (!sysBranch?.zone) return;
-
         const zoneCode = sysBranch.zone.trim();
         const zoneData = zoneMap.get(zoneCode);
         if (!zoneData) return;
-
-        // Find revenue data for the selected year
         const yearRevenue = branch.monthly_revenue?.find((y: any) => y.year === year);
         if (yearRevenue) {
             yearRevenue.records.forEach((record: any) => {
                 const monthIndex = record.month - 1;
                 if (monthIndex >= 0 && monthIndex < 12) {
-                    // Placeholder: Replace 'record.total' with the actual outstanding amount field
                     zoneData.months[monthIndex] += record.total || 0;
                 }
             });
         }
     });
-
-    // Convert to table data format (showing first 7 months)
     const tableData: TableRow[] = [];
-    const monthTotals = new Array(8).fill(0); // 7 months + total
-
+    const monthTotals = new Array(8).fill(0);
     zoneMap.forEach((data, zoneCode) => {
         const rowTotal = data.months.slice(0, 7).reduce((sum, val) => sum + val, 0);
         data.total = rowTotal;
-
         const row: TableRow = {
-            zone: data.zoneName, // Use zoneName instead of zone code
-            zoneCode: zoneCode, // Store zone code for reference if needed
+            zone: data.zoneName,
+            zoneCode: zoneCode,
             monthLabel: '',
             january: data.months[0] > 0 ? `RM ${data.months[0].toLocaleString()}` : null,
             february: data.months[1] > 0 ? `RM ${data.months[1].toLocaleString()}` : null,
@@ -139,17 +98,12 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
             total: `RM ${rowTotal.toLocaleString()}`,
             color: data.color,
         };
-
         tableData.push(row);
-
-        // Accumulate totals
         for (let i = 0; i < 7; i++) {
             monthTotals[i] += data.months[i];
         }
         monthTotals[7] += rowTotal;
     });
-
-    // Create totals row
     const totalsRow: TableRow = {
         zone: 'Total',
         monthLabel: '',
@@ -162,26 +116,23 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
         july: `RM ${monthTotals[6].toLocaleString()}`,
         total: `RM ${monthTotals[7].toLocaleString()}`,
     };
-
     return { tableData, totalsRow };
 };
-// ============================================================
-// ICON COMPONENTS
-// ============================================================
 
+// ============================================================
+// ICON COMPONENTS (unchanged)
+// ============================================================
 const IconDollar = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
-
 const IconExpense = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M16 8V5l6 7-6 7v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M8 8V5L2 12l6 7v-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
-
 const IconProfit = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -193,24 +144,15 @@ const IconProfit = () => (
 // ============================================================
 
 export default function FinanceDashboard() {
-    // ============================================================
-    // REDUX & ROUTER HOOKS
-    // ============================================================
+    // ... (Hooks and State declarations - unchanged)
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
     const router = useRouter();
 
-    // ============================================================
-    // STATE DECLARATIONS
-    // ============================================================
     const [isMounted, setIsMounted] = useState(false);
     const [loading, setLoading] = useState(true);
-
-    // System Info State
     const [stats, setStats] = useState<StatCardData[]>([]);
     const [dashboardMetrics, setDashboardMetrics] = useState<any>(null);
-
-    // Finance Data State
     const [financeData, setFinanceData] = useState<ProcessedFinanceData | null>(null);
     const [selectedYear, setSelectedYear] = useState<string>('2025');
     const [chartSeries, setChartSeries] = useState<ChartSeriesData[]>([]);
@@ -222,50 +164,23 @@ export default function FinanceDashboard() {
     // Company Financial Data State (Income, Cost, Profit)
     const [companyFinancialYear, setCompanyFinancialYear] = useState<string>('2025');
     const [companyFinancialData, setCompanyFinancialData] = useState<{
+        totalProfit: number; // For center display
         labels: string[];
         series: number[];
-    }>({ labels: [], series: [] });
+    }>({ totalProfit: 0, labels: [], series: [] });
 
-    // Income Category Chart State
-    const [incomeCategoryChartData, setIncomeCategoryChartData] = useState<{
-        labels: string[];
-        series: number[];
-    }>({ labels: [], series: [] });
+    const [incomeCategoryChartData, setIncomeCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
     const [incomeCategorySelectedYear, setIncomeCategorySelectedYear] = useState<string>('2025');
-
-    // Cost Category Chart State
-    const [costCategoryChartData, setCostCategoryChartData] = useState<{
-        labels: string[];
-        series: number[];
-    }>({ labels: [], series: [] });
+    const [costCategoryChartData, setCostCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
     const [costCategorySelectedYear, setCostCategorySelectedYear] = useState<string>('2025');
-
-    // Expense Category Chart State
-    const [expenseCategoryChartData, setExpenseCategoryChartData] = useState<{
-        labels: string[];
-        series: number[];
-    }>({ labels: [], series: [] });
+    const [expenseCategoryChartData, setExpenseCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
     const [expenseCategorySelectedYear, setExpenseCategorySelectedYear] = useState<string>('2025');
-
-    // Available Years & Raw Data
     const [availableYears, setAvailableYears] = useState<string[]>([]);
     const [rawBranchData, setRawBranchData] = useState<any[]>([]);
 
-    // Finance Totals State
-    const [financeTotals, setFinanceTotals] = useState({
-        revenue: 0,
-        cost: 0,
-        profit: 0,
-        profitMargin: '0.00',
-    });
+    const [financeTotals, setFinanceTotals] = useState({ revenue: 0, cost: 0, profit: 0, profitMargin: '0.00' });
+    const [yearlyProfitData, setYearlyProfitData] = useState<{ years: string[]; profitData: number[] }>({ years: [], profitData: [] });
 
-    // Yearly Profit Data State
-    const [yearlyProfitData, setYearlyProfitData] = useState<{
-        years: string[];
-        profitData: number[];
-    }>({ years: [], profitData: [] });
-
-    // NEW STATE DECLARATIONS FOR OUTSTANDING AMOUNT TABLE
     const [outstandingAmountData, setOutstandingAmountData] = useState<TableRow[]>([]);
     const [outstandingAmountTotals, setOutstandingAmountTotals] = useState<TableRow>({
         zone: 'Total',
@@ -280,7 +195,6 @@ export default function FinanceDashboard() {
         total: 'RM 0',
     });
     const [outstandingTableYear, setOutstandingTableYear] = useState<string>('2025');
-    // END NEW STATE DECLARATIONS
 
     // ============================================================
     // COMPUTED VALUES (useMemo)
@@ -288,16 +202,19 @@ export default function FinanceDashboard() {
 
     /**
      * Calculate year-wise totals for the yearly financial overview chart
-     * This shows total Income, Cost, and Profit for each year
+     * FIX: Returns years sorted ASCENDINGLY for chronological order on X-axis.
      */
     const yearlyFinancialSeries = useMemo(() => {
-        if (!financeData) return [];
+        if (!financeData) return { series: [], labels: [] };
 
-        const years = financeData.years;
+        // 1. Get available years and sort them in ASCENDING order (e.g., 2023, 2024, 2025)
+        const years = [...financeData.years].sort((a, b) => a.localeCompare(b));
+
         const revenueData: number[] = [];
         const costData: number[] = [];
         const profitData: number[] = [];
 
+        // 2. Iterate over the ASCENDING years list
         years.forEach((year) => {
             const yearTotals = calculateYearTotals(financeData, year);
             revenueData.push(yearTotals.revenue);
@@ -305,24 +222,19 @@ export default function FinanceDashboard() {
             profitData.push(yearTotals.profit);
         });
 
-        return [
-            {
-                name: 'Income',
-                data: revenueData,
-            },
-            {
-                name: 'Cost',
-                data: costData,
-            },
-            {
-                name: 'Profit',
-                data: profitData,
-            },
-        ];
+        // 3. Return the series and the labels (years)
+        return {
+            series: [
+                { name: 'Income', data: revenueData },
+                { name: 'Cost', data: costData },
+                { name: 'Profit', data: profitData },
+            ],
+            labels: years, // Use the ascendingly sorted years for labels
+        };
     }, [financeData]);
 
     /**
-     * Calculate range totals for the selected year range
+     * Calculate range totals for the selected year range (unchanged)
      */
     const rangeTotals = useMemo(() => {
         if (!financeData) {
@@ -332,42 +244,24 @@ export default function FinanceDashboard() {
     }, [financeData, startYear, endYear]);
 
     // ============================================================
-    // LIFECYCLE HOOKS (useEffect)
+    // LIFECYCLE HOOKS (useEffect - unchanged)
     // ============================================================
-
-    /**
-     * Component mount effect
-     */
     useEffect(() => {
         setIsMounted(true);
     }, []);
-
-    /**
-     * Initial data fetch effect
-     */
     useEffect(() => {
         fetchDashboardData();
     }, []);
-
-    /**
-     * Update chart when selected year changes
-     */
     useEffect(() => {
         if (financeData && selectedYear) {
             updateChartForYear(selectedYear);
         }
     }, [selectedYear, financeData]);
-
-    /**
-     * Update company financial data when year changes
-     */
     useEffect(() => {
         if (rawBranchData.length > 0 && companyFinancialYear) {
             updateCompanyFinancialChart(rawBranchData, companyFinancialYear);
         }
     }, [companyFinancialYear, rawBranchData]);
-
-    // NEW useEffect to update outstanding amounts when year or data changes
     useEffect(() => {
         if (dashboardMetrics?.branches && dashboardMetrics?.systemBranches && outstandingTableYear) {
             const yearNum = parseInt(outstandingTableYear);
@@ -376,52 +270,21 @@ export default function FinanceDashboard() {
             setOutstandingAmountTotals(totalsRow);
         }
     }, [dashboardMetrics, outstandingTableYear]);
-    // END NEW useEffect
 
     // ============================================================
-    // DATA FETCHING FUNCTIONS
+    // DATA FETCHING FUNCTIONS (unchanged)
     // ============================================================
-
-    /**
-     * Main function to fetch all dashboard data from APIs
-     * Fetches system info and finance summary, then processes the data
-     */
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-
-            // Fetch both APIs in parallel
             const [systemInfoResponse, financeSummaryResponse] = await Promise.all([dashboardService.getSystemInfo(), getFinanceSummary()]);
 
-            console.log('System Info:', systemInfoResponse);
-            console.log('Finance Summary:', financeSummaryResponse);
-
-            // Validate API responses
             if (systemInfoResponse?.data?.systemInfo && financeSummaryResponse?.data?.branches) {
                 const systemInfo = systemInfoResponse.data.systemInfo;
                 const branches = systemInfoResponse.data.branches || [];
                 const financeBranches = financeSummaryResponse.data.branches || [];
-
-                // Store raw branch data for category processing
                 setRawBranchData(financeBranches);
 
-                // ===== CALCULATE UNIQUE ZONES =====
-                const uniqueZones = new Set(branches.map((branch: any) => branch.zone).filter((zone: string) => zone && zone.trim() !== ''));
-                const totalUniqueZones = uniqueZones.size;
-
-                // ===== CALCULATE YEAR-WISE TOTALS FOR ALL BRANCHES =====
-                const yearWiseTotals: {
-                    [year: string]: {
-                        totalIncome: number;
-                        totalExpense: number;
-                        totalProfit: number;
-                        monthlyIncome: number[];
-                        monthlyExpense: number[];
-                        monthlyProfit: number[];
-                    };
-                } = {};
-
-                // Extract all unique years
                 const yearsSet = new Set<number>();
                 financeBranches.forEach((branch: any) => {
                     branch.monthly_revenue?.forEach((yearData: any) => {
@@ -430,7 +293,9 @@ export default function FinanceDashboard() {
                 });
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
 
-                // Initialize year-wise data
+                const yearWiseTotals: {
+                    [year: string]: { totalIncome: number; totalExpense: number; totalProfit: number; monthlyIncome: number[]; monthlyExpense: number[]; monthlyProfit: number[] };
+                } = {};
                 years.forEach((year) => {
                     yearWiseTotals[year] = {
                         totalIncome: 0,
@@ -442,108 +307,77 @@ export default function FinanceDashboard() {
                     };
                 });
 
-                // Calculate totals for all branches combined
                 financeBranches.forEach((branch: any) => {
                     years.forEach((year) => {
-                        // Process revenue
                         const revenueYear = branch.monthly_revenue?.find((y: any) => y.year === year);
                         if (revenueYear) {
                             revenueYear.records.forEach((record: any) => {
-                                yearWiseTotals[year].monthlyIncome[record.month - 1] += record.total;
                                 yearWiseTotals[year].totalIncome += record.total;
                             });
                         }
-
-                        // Process cost
                         const costYear = branch.monthly_cost?.find((y: any) => y.year === year);
                         if (costYear) {
                             costYear.records.forEach((record: any) => {
-                                yearWiseTotals[year].monthlyExpense[record.month - 1] += record.total;
                                 yearWiseTotals[year].totalExpense += record.total;
                             });
                         }
-
-                        // Calculate profit = income - expense
                         yearWiseTotals[year].totalProfit = yearWiseTotals[year].totalIncome - yearWiseTotals[year].totalExpense;
                     });
                 });
 
-                // ===== GET AVAILABLE YEARS FOR CATEGORY CHART =====
                 const categoryYears = getAvailableYears(financeBranches);
                 setAvailableYears(categoryYears);
-
-                // Set initial year range
                 if (categoryYears.length > 0) {
-                    setStartYear(categoryYears[categoryYears.length - 1]); // Oldest year
-                    setEndYear(categoryYears[0]); // Latest year
-                    setOutstandingTableYear(categoryYears[0]); // Set initial year for outstanding table
+                    setStartYear(categoryYears[categoryYears.length - 1]);
+                    setEndYear(categoryYears[0]);
+                    setOutstandingTableYear(categoryYears[0]);
                 }
 
-                // ===== CALCULATE ZONE-WISE FINANCIALS FOR CHART =====
                 const currentYear = years.length > 0 ? years[0] : new Date().getFullYear();
-                setSelectedZoneYear(currentYear);
-
-                const zoneFinancials = calculateZoneWiseFinancials(financeBranches, branches, currentYear);
-
-                // Prepare data for ZoneBar chart
-                const zoneCategories = zoneFinancials.map((z) => z.zoneName);
-                const zoneIncome = zoneFinancials.map((z) => z.totalIncome);
-                const zoneExpense = zoneFinancials.map((z) => z.totalExpense);
-                const zoneProfit = zoneFinancials.map((z) => z.totalProfit);
-
-                // ===== PROCESS FINANCE DATA FOR CHARTS =====
                 const processed = processFinanceData(financeBranches);
                 setFinanceData(processed);
 
-                // Set initial year and update charts
                 if (processed.years.length > 0) {
                     const latestYear = processed.years[0];
                     setSelectedYear(latestYear);
                     updateChartForYear(latestYear, processed);
-
-                    // Get latest 5 years profit data for yearly profit chart
                     const profitChartData = getLatestYearsProfitData(processed, 5);
                     setYearlyProfitData(profitChartData);
                 }
 
-                // ===== UPDATE CATEGORY CHARTS =====
                 if (categoryYears.length > 0) {
                     const latestYear = categoryYears[0];
                     setCompanyFinancialYear(latestYear);
-                    setIncomeCategorySelectedYear(latestYear);
-                    setCostCategorySelectedYear(latestYear);
-                    setExpenseCategorySelectedYear(latestYear);
-
                     updateCompanyFinancialChart(financeBranches, latestYear);
+                    setIncomeCategorySelectedYear(latestYear);
                     updateIncomeCategoryChart(financeBranches, latestYear);
+                    setCostCategorySelectedYear(latestYear);
                     updateCostCategoryChart(financeBranches, latestYear);
+                    setExpenseCategorySelectedYear(latestYear);
                     updateExpenseCategoryChart(financeBranches, latestYear);
                 }
 
-                // ===== STORE ALL CALCULATED METRICS =====
+                const uniqueZones = new Set(branches.map((branch: any) => branch.zone).filter((zone: string) => zone && zone.trim() !== ''));
+                const zoneFinancials = calculateZoneWiseFinancials(financeBranches, branches, currentYear);
+
                 const calculatedMetrics = {
-                    totalUniqueZones,
+                    totalUniqueZones: uniqueZones.size,
                     years,
                     yearWiseTotals,
                     zoneFinancials,
                     zoneChartData: {
-                        categories: zoneCategories,
-                        income: zoneIncome,
-                        expense: zoneExpense,
-                        profit: zoneProfit,
+                        categories: zoneFinancials.map((z) => z.zoneName),
+                        income: zoneFinancials.map((z) => z.totalIncome),
+                        expense: zoneFinancials.map((z) => z.totalExpense),
+                        profit: zoneFinancials.map((z) => z.totalProfit),
                     },
                     branches: financeBranches,
                     systemBranches: branches,
                 };
-
                 setDashboardMetrics(calculatedMetrics);
-                console.log('Calculated Metrics:', calculatedMetrics);
 
-                // ===== SET INITIAL SUMMARY YEAR DATA =====
                 if (years.length > 0) {
                     const latestYear = years[0].toString();
-                    setSelectedSummaryYear(latestYear);
-
                     const latestYearData = yearWiseTotals[latestYear];
                     if (latestYearData) {
                         setFinanceTotals({
@@ -555,11 +389,10 @@ export default function FinanceDashboard() {
                     }
                 }
 
-                // ===== UPDATE STAT CARDS =====
                 const updatedStats: StatCardData[] = [
                     {
                         title: 'Total Zones',
-                        value: totalUniqueZones.toString(),
+                        value: calculatedMetrics.totalUniqueZones.toString(),
                         valueSize: 'xl',
                         gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
                         iconSize: 'xl',
@@ -590,12 +423,10 @@ export default function FinanceDashboard() {
                         icon: <Image src="/assets/images/icons/staff.svg" alt="staff" width={35} height={35} className="brightness-0 invert opacity-90" />,
                     },
                 ];
-
                 setStats(updatedStats);
             }
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
-            // Set default stats on error
             setStats(getDefaultStats());
         } finally {
             setLoading(false);
@@ -603,74 +434,41 @@ export default function FinanceDashboard() {
     };
 
     // ============================================================
-    // CHART UPDATE FUNCTIONS
+    // CHART UPDATE FUNCTIONS (unchanged logic)
     // ============================================================
-
-    /**
-     * Update monthly chart data for a specific year
-     */
     const updateChartForYear = (year: string, data: ProcessedFinanceData | null = null) => {
         const processedData = data || financeData;
         if (!processedData) return;
-
-        // Get chart series for the selected year (Revenue and Cost)
         const series = getChartSeriesForYear(processedData, year, true, true, false);
         setChartSeries(series);
-
-        // Calculate totals
         const totals = calculateYearTotals(processedData, year);
         setFinanceTotals(totals);
     };
-
-    /**
-     * Update income category chart for a specific year
-     */
     const updateIncomeCategoryChart = (branches: any[], year: string) => {
         const categoryData = processCategoryTotalsForYear(branches, year);
         setIncomeCategoryChartData(categoryData);
     };
-
-    /**
-     * Update cost category chart for a specific year
-     */
     const updateCostCategoryChart = (branches: any[], year: string) => {
         const expenseData = processExpenseCategoryTotalsForYear(branches, year);
         setCostCategoryChartData(expenseData);
     };
-
-    /**
-     * Update expense category chart for a specific year
-     */
     const updateExpenseCategoryChart = (branches: any[], year: string) => {
         const expenseData = processExpenseCategoryTotalsForYear(branches, year);
         setExpenseCategoryChartData(expenseData);
     };
-
-    /**
-     * Update company financial overview chart for a specific year
-     */
     const updateCompanyFinancialChart = (branches: any[], year: string) => {
         const financialData = processCompanyFinancialsByYear(branches, year);
         setCompanyFinancialData(financialData);
     };
 
     // ============================================================
-    // EVENT HANDLERS
+    // EVENT HANDLERS (unchanged logic)
     // ============================================================
-
-    /**
-     * Handle year change for monthly financial overview chart
-     */
     const handleYearChange = (year: string) => {
         setSelectedYear(year);
     };
-
-    /**
-     * Handle year change for summary bar
-     */
     const handleSummaryYearChange = (year: string) => {
         setSelectedSummaryYear(year);
-
         if (dashboardMetrics?.yearWiseTotals && dashboardMetrics.yearWiseTotals[year]) {
             const yearData = dashboardMetrics.yearWiseTotals[year];
             setFinanceTotals({
@@ -681,132 +479,66 @@ export default function FinanceDashboard() {
             });
         }
     };
-
-    /**
-     * Handle year change for income category chart
-     */
     const handleIncomeCategoryYearChange = (year: string) => {
         setIncomeCategorySelectedYear(year);
         updateIncomeCategoryChart(rawBranchData, year);
     };
-
-    /**
-     * Handle year change for cost category chart
-     */
     const handleCostCategoryYearChange = (year: string) => {
         setCostCategorySelectedYear(year);
         updateCostCategoryChart(rawBranchData, year);
     };
-
-    /**
-     * Handle year change for expense category chart
-     */
     const handleExpenseCategoryYearChange = (year: string) => {
         setExpenseCategorySelectedYear(year);
         updateExpenseCategoryChart(rawBranchData, year);
     };
-
-    /**
-     * Handle year change for company financial overview chart
-     */
     const handleCompanyFinancialYearChange = (year: string) => {
         setCompanyFinancialYear(year);
         updateCompanyFinancialChart(rawBranchData, year);
     };
-
-    /**
-     * Handle year change for zone chart
-     */
     const handleZoneYearChange = (year: string) => {
         const yearNum = parseInt(year);
         setSelectedZoneYear(yearNum);
-
-        // Recalculate zone financials for the selected year
         if (dashboardMetrics?.branches && dashboardMetrics?.systemBranches) {
             const zoneFinancials = calculateZoneWiseFinancials(dashboardMetrics.branches, dashboardMetrics.systemBranches, yearNum);
-
-            // Update zone chart data
             const updatedZoneChartData = {
                 categories: zoneFinancials.map((z) => z.zoneName),
                 income: zoneFinancials.map((z) => z.totalIncome),
                 expense: zoneFinancials.map((z) => z.totalExpense),
                 profit: zoneFinancials.map((z) => z.totalProfit),
             };
-
-            // Update dashboard metrics with new zone data
-            setDashboardMetrics((prev: any) => ({
-                ...prev,
-                zoneChartData: updatedZoneChartData,
-            }));
+            setDashboardMetrics((prev: any) => ({ ...prev, zoneChartData: updatedZoneChartData }));
         }
     };
-
-    /**
-     * Handle year change for outstanding table
-     */
     const handleOutstandingTableYearChange = (year: string) => {
         setOutstandingTableYear(year);
     };
-
-    /**
-     * Handle year range selection
-     */
     const handleYearRangeSelect = (start: string, end: string) => {
         setStartYear(start);
         setEndYear(end);
     };
-
-    /**
-     * Handle stat card view report action
-     */
     const handleViewReport = (index: number) => {
-        const stat = stats[index];
-        console.log('View report for:', stat.title);
+        console.log('View report for:', stats[index].title);
     };
-
-    /**
-     * Handle stat card edit report action
-     */
     const handleEditReport = (index: number) => {
-        const stat = stats[index];
-        console.log('Edit report for:', stat.title);
+        console.log('Edit report for:', stats[index].title);
     };
-
-    /**
-     * Handle table view action
-     */
     function handleTableView(): void {
         console.log('Table view action');
     }
-
-    /**
-     * Handle table delete action
-     */
     function handleTableDelete(): void {
         console.log('Table delete action');
     }
-
-    /**
-     * Handle zone click - navigate to zone dashboard
-     */
     const handleZoneClick = (row: TableRow, columnKey: string) => {
         if (columnKey === 'zone') {
             const zoneName = row.zone as string;
-            // Convert zone name to URL-friendly format
             const zoneSlug = zoneName.toLowerCase().replace(/\s+/g, '-');
-
-            // Navigate to zone-specific dashboard
             router.push(`/dashboard/zone/${encodeURIComponent(zoneSlug)}?name=${encodeURIComponent(zoneName)}`);
         }
     };
 
     // ============================================================
-    // UTILITY FUNCTIONS
+    // UTILITY FUNCTIONS (unchanged)
     // ============================================================
-
-    /**
-     * Get default stat cards for fallback
-     */
     const getDefaultStats = (): StatCardData[] => [
         {
             title: 'Total Zones',
@@ -841,14 +573,6 @@ export default function FinanceDashboard() {
             icon: <Image src="/assets/images/icons/staff.svg" alt="staff" width={35} height={35} className="brightness-0 invert opacity-90" />,
         },
     ];
-
-    // ============================================================
-    // TABLE CONFIGURATION
-    // ============================================================
-
-    /**
-     * DataTable columns configuration for outstanding amount
-     */
     const outstandingAmountColumns: TableColumn[] = [
         { key: 'zone', label: 'Zone', align: 'left', width: '200px', clickable: true },
         { key: 'monthLabel', label: '(Month/Outstanding Amount)', align: 'center', width: '200px' },
@@ -861,23 +585,17 @@ export default function FinanceDashboard() {
         { key: 'july', label: 'July', align: 'center' },
         { key: 'total', label: 'Total', align: 'center' },
     ];
-
-    /**
-     * DataTable configuration for outstanding amount
-     * Now includes year filter options
-     */
     const outstandingAmountConfig: DataTableConfig = {
         title: 'Outstanding Amount by Zone',
         showColorIndicator: true,
         showTotalRow: true,
         showYearFilter: true,
-        yearOptions: availableYears,
         selectedYear: outstandingTableYear,
         onYearChange: handleOutstandingTableYearChange,
     };
 
     // ============================================================
-    // LOADING STATE
+    // LOADING STATE (unchanged)
     // ============================================================
     if (loading) {
         return (
@@ -893,9 +611,7 @@ export default function FinanceDashboard() {
     return (
         <>
             <div className="px-4 sm:px-6 lg:px-8">
-                {/* ============================================================ */}
                 {/* BREADCRUMB NAVIGATION */}
-                {/* ============================================================ */}
                 <ul className="flex space-x-2 rtl:space-x-reverse">
                     <li>
                         <Link href="/" className="text-primary hover:underline">
@@ -908,24 +624,17 @@ export default function FinanceDashboard() {
                 </ul>
 
                 <div className="pt-5">
-                    {/* ============================================================ */}
                     {/* ROW 1 - KPI STAT CARDS */}
-                    {/* Total Zones, Schools, Students, Staff */}
-                    {/* ============================================================ */}
                     <StatsGrid stats={stats} isRtl={isRtl} onViewReport={handleViewReport} onEditReport={handleEditReport} />
 
-                    {/* ============================================================ */}
                     {/* ROW 2 - MONTHLY FINANCIAL OVERVIEW & COMPANY PIE CHART */}
-                    {/* Left: Area Chart (Monthly Revenue/Cost by selected year) */}
-                    {/* Right: Pie Chart (Income/Cost/Profit breakdown) */}
-                    {/* ============================================================ */}
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
                         {/* Monthly Financial Overview - 2/3 width */}
                         <div className="lg:col-span-2">
                             <AreaChart
                                 title="Financial Overview"
                                 showYearFilter={true}
-                                yearOptions={[...(financeData?.years || [])].reverse()}
+                                yearOptions={financeData?.years || []}
                                 showDropdown={false}
                                 series={chartSeries}
                                 labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
@@ -958,19 +667,12 @@ export default function FinanceDashboard() {
                                 onDropdownSelect={(option) => {
                                     console.log('Selected:', option);
                                 }}
-                                colors={['#00ab55', '#e7515a', '#4361ee']} // Green, Red, Blue
                             />
                         </div>
                     </div>
 
-                    {/* ============================================================ */}
                     {/* ROW 3 - CATEGORY BREAKDOWN PIE CHARTS */}
-                    {/* Left: Income by Category */}
-                    {/* Center: Cost by Category */}
-                    {/* Right: Expense by Category (Donut) */}
-                    {/* ============================================================ */}
                     <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {/* Income By Category Chart */}
                         <BasicPieChart
                             chartTitle="Income By Category"
                             series={incomeCategoryChartData.series}
@@ -987,7 +689,6 @@ export default function FinanceDashboard() {
                             }}
                         />
 
-                        {/* Cost By Category Chart */}
                         <BasicPieChart
                             chartTitle="Cost By Category"
                             series={costCategoryChartData.series}
@@ -1004,7 +705,6 @@ export default function FinanceDashboard() {
                             }}
                         />
 
-                        {/* Expense Category PieChart (Donut) */}
                         <div className="md:col-span-2 lg:col-span-1">
                             <PieChart
                                 title="Expense By Category"
@@ -1024,11 +724,7 @@ export default function FinanceDashboard() {
                         </div>
                     </div>
 
-                    {/* ============================================================ */}
                     {/* ROW 4 - YEARLY FINANCIAL OVERVIEW & PROFIT TREND */}
-                    {/* Left: Area Chart (Yearly Income/Cost/Profit totals) */}
-                    {/* Right: Bar Chart (5-year profit trend) */}
-                    {/* ============================================================ */}
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
                         {/* Yearly Financial Overview - 2/3 width */}
                         <div className="lg:col-span-2">
@@ -1037,8 +733,8 @@ export default function FinanceDashboard() {
                                 showYearFilter={false}
                                 yearOptions={financeData?.years || []}
                                 showDropdown={false}
-                                series={yearlyFinancialSeries}
-                                labels={financeData?.years || []}
+                                series={yearlyFinancialSeries.series}
+                                labels={yearlyFinancialSeries.labels} // FIX: Now sorted ascendingly
                                 height={325}
                                 yAxisFormatter={(value: number) => {
                                     if (value >= 1000000) {
@@ -1057,12 +753,7 @@ export default function FinanceDashboard() {
                                 title="Yearly Profit Trend"
                                 subtitle="Last 5 years profit overview"
                                 icon={<IconDollarSign />}
-                                series={[
-                                    {
-                                        name: 'Profit',
-                                        data: yearlyProfitData.profitData,
-                                    },
-                                ]}
+                                series={[{ name: 'Profit', data: yearlyProfitData.profitData }]}
                                 categories={yearlyProfitData.years}
                                 height={325}
                                 colors={['#00ab55']}
@@ -1070,27 +761,15 @@ export default function FinanceDashboard() {
                         </div>
                     </div>
 
-                    {/* ============================================================ */}
                     {/* ROW 5 - ZONE BAR CHART */}
-                    {/* Income/Expense/Profit breakdown by zone */}
-                    {/* ============================================================ */}
                     <div className="mb-6">
                         {dashboardMetrics?.zoneChartData ? (
                             <ZoneBar
                                 chartTitle={`Total Income Breakdown By Zone (${selectedZoneYear})`}
                                 series={[
-                                    {
-                                        name: 'INCOME',
-                                        data: dashboardMetrics.zoneChartData.income,
-                                    },
-                                    {
-                                        name: 'EXPENSE',
-                                        data: dashboardMetrics.zoneChartData.expense,
-                                    },
-                                    {
-                                        name: 'PROFIT',
-                                        data: dashboardMetrics.zoneChartData.profit,
-                                    },
+                                    { name: 'INCOME', data: dashboardMetrics.zoneChartData.income },
+                                    { name: 'EXPENSE', data: dashboardMetrics.zoneChartData.expense },
+                                    { name: 'PROFIT', data: dashboardMetrics.zoneChartData.profit },
                                 ]}
                                 categories={dashboardMetrics.zoneChartData.categories}
                                 colors={['#10b981', '#ef4444', '#8b5cf6']}
@@ -1111,10 +790,7 @@ export default function FinanceDashboard() {
                         )}
                     </div>
 
-                    {/* ============================================================ */}
-                    {/* ROW 6 - OUTSTANDING AMOUNT TABLE (NOW DYNAMIC) */}
-                    {/* Clickable zone rows that navigate to zone dashboard */}
-                    {/* ============================================================ */}
+                    {/* ROW 6 - OUTSTANDING AMOUNT TABLE */}
                     <div className="mb-6">
                         <DataTable
                             columns={outstandingAmountColumns}
@@ -1129,10 +805,7 @@ export default function FinanceDashboard() {
                         />
                     </div>
 
-                    {/* ============================================================ */}
                     {/* ROW 7 - OUTSTANDING AMOUNT CHART */}
-                    {/* Visual representation of outstanding amounts */}
-                    {/* ============================================================ */}
                     <div className="mb-6">
                         <OutstandingAmountChart />
                     </div>

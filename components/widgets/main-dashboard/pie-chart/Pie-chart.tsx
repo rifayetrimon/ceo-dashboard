@@ -46,8 +46,10 @@ export default function PieChart({
         setIsMounted(true);
     }, []);
 
-    // Default colors if not provided
     const defaultColors = isDark ? ['#5c1ac3', '#e2a03f', '#e7515a', '#2196f3', '#4caf50'] : ['#e2a03f', '#5c1ac3', '#e7515a', '#2196f3', '#4caf50'];
+
+    // FIX: Custom colors for Income (Green), Cost (Red), Profit (Blue: #2196f3)
+    const financialColors = ['#00ab55', '#e7515a', '#2196f3'];
 
     const chartOptions: any = {
         chart: {
@@ -70,7 +72,8 @@ export default function PieChart({
             width: type === 'donut' ? 2 : 0,
             colors: [isDark ? '#0e1726' : '#fff'],
         },
-        colors: colors || defaultColors,
+        // Apply custom colors for the financial overview chart
+        colors: title === 'Company Financial Overview' ? financialColors : colors || defaultColors,
         legend: {
             position: 'bottom',
             horizontalAlign: 'center',
@@ -88,7 +91,6 @@ export default function PieChart({
                 vertical: 4,
             },
             formatter: function (seriesName: string, opts: any) {
-                // Truncate long labels
                 const maxLength = 18;
                 if (seriesName.length > maxLength) {
                     return seriesName.substring(0, maxLength) + '...';
@@ -132,17 +134,28 @@ export default function PieChart({
                                       fontWeight: 700,
                                       color: isDark ? '#bfc9d4' : '#111827',
                                       offsetY: 8,
+                                      // On hover, show the value of the hovered slice (Income, Cost, or Profit)
                                       formatter: (val: any) => `RM ${Number(val).toLocaleString()}`,
                                   },
                                   total: {
                                       show: true,
-                                      label: 'Total',
+                                      // FIX: Display 'Net Profit' as the label
+                                      label: title === 'Company Financial Overview' ? 'Profit' : 'Total',
                                       fontSize: '16px',
                                       fontWeight: 600,
                                       color: isDark ? '#bfc9d4' : '#111827',
                                       formatter: (w: any) => {
-                                          const total = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
-                                          return `RM ${total.toLocaleString()}`;
+                                          let centerValue: number;
+                                          if (title === 'Company Financial Overview' && w.globals.series.length >= 2) {
+                                              // FIX: Calculate Profit (Income - Cost) using the first two series values
+                                              const income = w.globals.series[0] || 0;
+                                              const cost = w.globals.series[1] || 0;
+                                              centerValue = income - cost;
+                                          } else {
+                                              // Default behavior: sum all series
+                                              centerValue = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
+                                          }
+                                          return `RM ${centerValue.toLocaleString()}`;
                                       },
                                   },
                               },
