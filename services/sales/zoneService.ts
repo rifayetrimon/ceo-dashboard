@@ -16,6 +16,31 @@ import {
 } from '@/services/sales/financeService'; // Assuming financeService is the source of shared interfaces
 
 // ============================================================
+// CORE FINANCIAL INTERFACES (DEFINED HERE TO SOLVE 'IMPLICIT ANY' ERROR)
+// NOTE: These interfaces define the structure of the data records being iterated over.
+// ============================================================
+
+/** Monthly breakdown of revenue/cost, including category details. */
+export interface MonthlyRecord {
+    month: number;
+    total: number;
+    categories?: CategoryData[];
+}
+
+/** Yearly summary data containing monthly records. */
+export interface YearlyData {
+    year: number;
+    total: number;
+    records: MonthlyRecord[];
+}
+
+// Extend Branch to ensure we have the correct type for iteration (if Branch wasn't fully defined)
+export interface FinanceBranch extends Branch {
+    monthly_revenue: YearlyData[];
+    monthly_cost: YearlyData[];
+}
+
+// ============================================================
 // ZONE-SPECIFIC INTERFACES
 // ============================================================
 
@@ -35,7 +60,7 @@ export interface ProcessedZoneFinancialData {
     revenueByYear: { [year: string]: number[] };
     costByYear: { [year: string]: number[] };
     profitByYear: { [year: string]: number[] };
-    zoneBranches: Branch[];
+    zoneBranches: FinanceBranch[]; // Changed to FinanceBranch
 }
 
 /** Year-wise totals for the zone */
@@ -108,7 +133,7 @@ export const calculateZoneSystemInfo = (allSystemBranches: any[], zoneName: stri
  * @param zoneName - The name of the zone to filter and process.
  * @returns ProcessedZoneFinancialData object.
  */
-export const processZoneFinancialData = (allFinanceBranches: Branch[], allSystemBranches: any[], zoneName: string): ProcessedZoneFinancialData => {
+export const processZoneFinancialData = (allFinanceBranches: FinanceBranch[], allSystemBranches: any[], zoneName: string): ProcessedZoneFinancialData => {
     // --- STEP 1: Identify and Filter Zone Branches ---
     // Use an object map to link finance branches (by ID) to system zone name
     const systemBranchMap: { [id: string]: any } = {};
@@ -127,7 +152,7 @@ export const processZoneFinancialData = (allFinanceBranches: Branch[], allSystem
 
         // Filter based on the system branch's zoneName
         return systemBranch?.zoneName?.trim().toUpperCase() === zoneName.trim().toUpperCase();
-    });
+    }) as FinanceBranch[]; // Cast for type safety
 
     // Get zone code for metadata
     const zoneInfo = zoneBranches.length > 0 ? systemBranchMap[zoneBranches[0].branchId.toString()] : undefined;
@@ -160,7 +185,8 @@ export const processZoneFinancialData = (allFinanceBranches: Branch[], allSystem
             // Process revenue
             const revenueYear = branch.monthly_revenue?.find((y) => y.year.toString() === year);
             if (revenueYear) {
-                revenueYear.records.forEach((record) => {
+                // FIX: Explicitly type 'record' using the new MonthlyRecord interface
+                revenueYear.records.forEach((record: MonthlyRecord) => {
                     const monthIndex = record.month - 1;
                     if (monthIndex >= 0 && monthIndex < 12) {
                         revenueByYear[year][monthIndex] += record.total || 0;
@@ -171,7 +197,8 @@ export const processZoneFinancialData = (allFinanceBranches: Branch[], allSystem
             // Process cost
             const costYear = branch.monthly_cost?.find((y) => y.year.toString() === year);
             if (costYear) {
-                costYear.records.forEach((record) => {
+                // FIX: Explicitly type 'record' using the new MonthlyRecord interface
+                costYear.records.forEach((record: MonthlyRecord) => {
                     const monthIndex = record.month - 1;
                     if (monthIndex >= 0 && monthIndex < 12) {
                         costByYear[year][monthIndex] += record.total || 0;
@@ -326,14 +353,15 @@ export const getLatestYearsZoneProfitData = (processedZoneData: ProcessedZoneFin
  * Aggregates all branch revenue data by category for a specific zone and year.
  * Used for Income By Category pie chart.
  */
-export const processZoneCategoryTotalsForYear = (zoneBranches: Branch[], year: string): { labels: string[]; series: number[] } => {
+export const processZoneCategoryTotalsForYear = (zoneBranches: FinanceBranch[], year: string): { labels: string[]; series: number[] } => {
     const categoryTotals: Map<string, { name: string; total: number }> = new Map();
 
     zoneBranches.forEach((branch) => {
         const revenueYear = branch.monthly_revenue?.find((y) => y.year.toString() === year);
 
         if (revenueYear) {
-            revenueYear.records?.forEach((record) => {
+            revenueYear.records?.forEach((record: MonthlyRecord) => {
+                // FIX: Explicitly type 'record'
                 record.categories?.forEach((category: CategoryData) => {
                     const existing = categoryTotals.get(category.code);
                     if (existing) {
@@ -364,14 +392,15 @@ export const processZoneCategoryTotalsForYear = (zoneBranches: Branch[], year: s
  * Aggregates all branch cost data by category for a specific zone and year.
  * Used for Cost By Category pie chart.
  */
-export const processZoneExpenseCategoryTotalsForYear = (zoneBranches: Branch[], year: string): { labels: string[]; series: number[] } => {
+export const processZoneExpenseCategoryTotalsForYear = (zoneBranches: FinanceBranch[], year: string): { labels: string[]; series: number[] } => {
     const categoryTotals: Map<string, { name: string; total: number }> = new Map();
 
     zoneBranches.forEach((branch) => {
         const costYear = branch.monthly_cost?.find((y) => y.year.toString() === year);
 
         if (costYear) {
-            costYear.records?.forEach((record) => {
+            costYear.records?.forEach((record: MonthlyRecord) => {
+                // FIX: Explicitly type 'record'
                 record.categories?.forEach((category: CategoryData) => {
                     const existing = categoryTotals.get(category.code);
                     if (existing) {
@@ -406,7 +435,7 @@ export const processZoneExpenseCategoryTotalsForYear = (zoneBranches: Branch[], 
  * Calculates zone company financials (total Income, Cost, Profit) for a specific year.
  * Used for Company Financial Overview pie chart.
  */
-export const processZoneCompanyFinancialsByYear = (zoneBranches: Branch[], year: string): ZoneCompanyFinancials => {
+export const processZoneCompanyFinancialsByYear = (zoneBranches: FinanceBranch[], year: string): ZoneCompanyFinancials => {
     let totalIncome = 0;
     let totalCost = 0;
 
@@ -414,7 +443,8 @@ export const processZoneCompanyFinancialsByYear = (zoneBranches: Branch[], year:
         // Calculate total income
         const revenueYear = branch.monthly_revenue?.find((y) => y.year.toString() === year);
         if (revenueYear) {
-            revenueYear.records.forEach((record) => {
+            revenueYear.records.forEach((record: MonthlyRecord) => {
+                // FIX: Explicitly type 'record'
                 totalIncome += record.total || 0;
             });
         }
@@ -422,7 +452,8 @@ export const processZoneCompanyFinancialsByYear = (zoneBranches: Branch[], year:
         // Calculate total cost
         const costYear = branch.monthly_cost?.find((y) => y.year.toString() === year);
         if (costYear) {
-            costYear.records.forEach((record) => {
+            costYear.records.forEach((record: MonthlyRecord) => {
+                // FIX: Explicitly type 'record'
                 totalCost += record.total || 0;
             });
         }
@@ -444,7 +475,7 @@ export const processZoneCompanyFinancialsByYear = (zoneBranches: Branch[], year:
  * Calculates income, cost, and profit for each branch within the zone.
  * Returns detailed branch-wise financial data with monthly and yearly breakdowns.
  */
-export const calculateZoneBranchFinancials = (zoneBranches: Branch[], allSystemBranches: any[]): ZoneBranchFinancials[] => {
+export const calculateZoneBranchFinancials = (zoneBranches: FinanceBranch[], allSystemBranches: any[]): ZoneBranchFinancials[] => {
     const branchFinancials: ZoneBranchFinancials[] = [];
 
     // Create a map for quick system branch lookup
@@ -480,7 +511,8 @@ export const calculateZoneBranchFinancials = (zoneBranches: Branch[], allSystemB
             // Process revenue
             const revenueYear = financeBranch.monthly_revenue?.find((y) => y.year === year);
             if (revenueYear) {
-                revenueYear.records.forEach((record) => {
+                revenueYear.records.forEach((record: MonthlyRecord) => {
+                    // FIX: Explicitly type 'record'
                     const monthIndex = record.month - 1;
                     if (monthIndex >= 0 && monthIndex < 12) {
                         monthlyIncome[monthIndex] = record.total || 0;
@@ -491,7 +523,8 @@ export const calculateZoneBranchFinancials = (zoneBranches: Branch[], allSystemB
             // Process cost
             const costYear = financeBranch.monthly_cost?.find((y) => y.year === year);
             if (costYear) {
-                costYear.records.forEach((record) => {
+                costYear.records.forEach((record: MonthlyRecord) => {
+                    // FIX: Explicitly type 'record'
                     const monthIndex = record.month - 1;
                     if (monthIndex >= 0 && monthIndex < 12) {
                         monthlyCost[monthIndex] = record.total || 0;
@@ -533,7 +566,7 @@ export const calculateZoneBranchFinancials = (zoneBranches: Branch[], allSystemB
  * Get branch-wise data formatted for bar chart comparison.
  * Shows income, cost, and profit for all branches in a specific year.
  */
-export const getZoneBranchComparisonData = (zoneBranches: Branch[], allSystemBranches: any[], year: string) => {
+export const getZoneBranchComparisonData = (zoneBranches: FinanceBranch[], allSystemBranches: any[], year: string) => {
     const branchNames: string[] = [];
     const incomeData: number[] = [];
     const costData: number[] = [];
@@ -563,7 +596,8 @@ export const getZoneBranchComparisonData = (zoneBranches: Branch[], allSystemBra
         // Calculate total income
         const revenueYear = financeBranch.monthly_revenue?.find((y) => y.year.toString() === year);
         if (revenueYear) {
-            revenueYear.records.forEach((record) => {
+            revenueYear.records.forEach((record: MonthlyRecord) => {
+                // FIX: Explicitly type 'record'
                 totalIncome += record.total || 0;
             });
         }
@@ -571,7 +605,8 @@ export const getZoneBranchComparisonData = (zoneBranches: Branch[], allSystemBra
         // Calculate total cost
         const costYear = financeBranch.monthly_cost?.find((y) => y.year.toString() === year);
         if (costYear) {
-            costYear.records.forEach((record) => {
+            costYear.records.forEach((record: MonthlyRecord) => {
+                // FIX: Explicitly type 'record'
                 totalCost += record.total || 0;
             });
         }
@@ -589,6 +624,7 @@ export const getZoneBranchComparisonData = (zoneBranches: Branch[], allSystemBra
             { name: 'Income', data: incomeData },
             { name: 'Cost', data: costData },
             { name: 'Profit', data: profitData },
+            // Note: The ZoneBar component currently expects a maximum of 3 series.
         ],
     };
 };
@@ -600,7 +636,7 @@ export const getZoneBranchComparisonData = (zoneBranches: Branch[], allSystemBra
 /**
  * Get available years for the zone (from zone branches).
  */
-export const getZoneAvailableYears = (zoneBranches: Branch[]): string[] => {
+export const getZoneAvailableYears = (zoneBranches: FinanceBranch[]): string[] => {
     const years = new Set<string>();
 
     zoneBranches.forEach((branch) => {
