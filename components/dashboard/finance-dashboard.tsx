@@ -399,7 +399,7 @@ export default function FinanceDashboard() {
                         icon: <Image src="/assets/images/icons/zone1.svg" alt="zones" width={35} height={35} className="brightness-0 invert opacity-90" />,
                     },
                     {
-                        title: 'Total Schools',
+                        title: 'Total Clients',
                         value: systemInfo.totalClient?.toLocaleString() || '0',
                         valueSize: 'xl',
                         gradient: 'bg-gradient-to-r from-violet-500 to-violet-400',
@@ -765,7 +765,7 @@ export default function FinanceDashboard() {
                     <div className="mb-6">
                         {dashboardMetrics?.zoneChartData ? (
                             <ZoneBar
-                                chartTitle={`Total Income Breakdown By Zone (${selectedZoneYear})`}
+                                chartTitle={`Total Income Breakdown By Zone`}
                                 series={[
                                     { name: 'INCOME', data: dashboardMetrics.zoneChartData.income },
                                     { name: 'EXPENSE', data: dashboardMetrics.zoneChartData.expense },

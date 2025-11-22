@@ -81,6 +81,22 @@ export default function AreaChart({
 
     const chartColors = generateColors();
 
+    // Improved formatter function for M and K
+    const formatValue = (value: number): string => {
+        if (value === 0) return '0';
+        if (value >= 1000000) {
+            // Format as millions
+            const millions = value / 1000000;
+            return millions % 1 === 0 ? millions.toFixed(0) + 'M' : millions.toFixed(1) + 'M';
+        }
+        if (value >= 1000) {
+            // Format as thousands
+            const thousands = value / 1000;
+            return thousands % 1 === 0 ? thousands.toFixed(0) + 'K' : thousands.toFixed(1) + 'K';
+        }
+        return value.toFixed(0);
+    };
+
     // Calculate dynamic min/max and tick configuration for yAxis
     const calculateYAxisConfig = () => {
         if (!series || series.length === 0) {
@@ -88,11 +104,7 @@ export default function AreaChart({
                 min: 0,
                 max: 1000000,
                 tickAmount: 5,
-                formatter: (value: number) => {
-                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                    if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                    return value.toFixed(0);
-                },
+                formatter: formatValue,
             };
         }
 
@@ -102,11 +114,7 @@ export default function AreaChart({
                 min: 0,
                 max: 1000000,
                 tickAmount: 5,
-                formatter: (value: number) => {
-                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                    if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                    return value.toFixed(0);
-                },
+                formatter: formatValue,
             };
         }
 
@@ -114,53 +122,27 @@ export default function AreaChart({
         let min = yAxisMin !== undefined ? yAxisMin : 0;
         let max: number;
         let ticks: number;
-        let formatter: (value: number) => string;
 
-        // Less than 1M - use K scale with professional intervals
+        // Use custom formatter if provided, otherwise use default
+        const formatter = yAxisFormatter || formatValue;
+
+        // Less than 1M - use K scale
         if (maxValue < 1000000) {
             max = yAxisMax !== undefined ? yAxisMax : Math.ceil(maxValue / 100000) * 100000;
             if (max < 100000) max = 100000;
-            if (max < 1000000) max = 1000000;
-
             ticks = tickAmount || 5;
-            formatter =
-                yAxisFormatter ||
-                ((value: number) => {
-                    if (value === 0) return '0';
-                    if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                    return value.toFixed(0);
-                });
         }
-        // Between 1M and 2M
-        else if (maxValue >= 1000000 && maxValue < 2000000) {
-            max = yAxisMax !== undefined ? yAxisMax : Math.ceil(maxValue / 100000) * 100000;
-            max = Math.ceil((max * 1.1) / 100000) * 100000;
-            if (max < 2000000) max = 2000000;
-
-            ticks = tickAmount || 5;
-            formatter =
-                yAxisFormatter ||
-                ((value: number) => {
-                    if (value === 0) return '0';
-                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                    if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                    return value.toFixed(0);
-                });
-        }
-        // Greater than 2M
-        else {
+        // Between 1M and 10M
+        else if (maxValue >= 1000000 && maxValue < 10000000) {
             max = yAxisMax !== undefined ? yAxisMax : Math.ceil(maxValue / 500000) * 500000;
-            max = Math.ceil((max * 1.1) / 500000) * 500000;
-
+            max = Math.max(max, Math.ceil((maxValue * 1.1) / 500000) * 500000);
             ticks = tickAmount || 5;
-            formatter =
-                yAxisFormatter ||
-                ((value: number) => {
-                    if (value === 0) return '0';
-                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                    if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                    return value.toFixed(0);
-                });
+        }
+        // Greater than 10M
+        else {
+            max = yAxisMax !== undefined ? yAxisMax : Math.ceil(maxValue / 1000000) * 1000000;
+            max = Math.max(max, Math.ceil((maxValue * 1.1) / 1000000) * 1000000);
+            ticks = tickAmount || 5;
         }
 
         return { min, max, tickAmount: ticks, formatter };
@@ -296,13 +278,18 @@ export default function AreaChart({
             },
             y: {
                 formatter: (value: number) => {
-                    return (
-                        'RM ' +
-                        value.toLocaleString('en-MY', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                        })
-                    );
+                    if (value === 0) return 'RM 0';
+                    if (value >= 1000000) {
+                        // Format as millions
+                        const millions = value / 1000000;
+                        return 'RM ' + millions.toFixed(2) + 'M';
+                    }
+                    if (value >= 1000) {
+                        // Format as thousands
+                        const thousands = value / 1000;
+                        return 'RM ' + thousands.toFixed(2) + 'K';
+                    }
+                    return 'RM ' + value.toFixed(2);
                 },
             },
         },

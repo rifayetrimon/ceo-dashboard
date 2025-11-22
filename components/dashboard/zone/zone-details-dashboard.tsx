@@ -304,7 +304,7 @@ export default function ZoneDetailsDashboard() {
     const updateStatCards = (info: ZoneSystemInfo) => {
         const updatedStats: StatCardData[] = [
             {
-                title: 'Total Branches',
+                title: 'Total Schools',
                 value: info.totalBranches.toString(),
                 valueSize: 'xl',
                 gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
@@ -312,7 +312,7 @@ export default function ZoneDetailsDashboard() {
                 iconSize: 'xl',
             },
             {
-                title: 'Total Schools',
+                title: 'Total Clients',
                 value: info.totalSchools.toLocaleString(),
                 valueSize: 'xl',
                 gradient: 'bg-gradient-to-r from-violet-500 to-violet-400',
@@ -484,7 +484,7 @@ export default function ZoneDetailsDashboard() {
                     </li>
                 </ul>
 
-                <h1 className="text-2xl font-bold mt-5 mb-6">Finance Dashboard: {zoneName} Zone</h1>
+                <h1 className="text-2xl font-bold mt-5 mb-6">{zoneName}</h1>
 
                 <div className="pt-5">
                     {/* ROW 1 - KPI STAT CARDS */}
@@ -583,6 +583,7 @@ export default function ZoneDetailsDashboard() {
                             <AreaChart
                                 title={`${zoneName} Yearly Financial Overview`}
                                 showYearFilter={false}
+                                showDropdown={false}
                                 series={yearlyFinancialSeries}
                                 labels={zoneYearlyChartLabels}
                                 height={325}
@@ -614,7 +615,7 @@ export default function ZoneDetailsDashboard() {
                     <div className="mb-6">
                         {branchComparisonData.categories.length > 0 ? (
                             <ZoneBar
-                                chartTitle={`Branch Financial Breakdown (${branchComparisonYear})`}
+                                chartTitle={`Branch Financial Breakdown`}
                                 series={branchComparisonData.series}
                                 categories={branchComparisonData.categories}
                                 colors={['#10b981', '#ef4444', '#8b5cf6']}
