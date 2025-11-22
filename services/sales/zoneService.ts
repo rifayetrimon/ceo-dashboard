@@ -16,8 +16,7 @@ import {
 } from '@/services/sales/financeService'; // Assuming financeService is the source of shared interfaces
 
 // ============================================================
-// CORE FINANCIAL INTERFACES (DEFINED HERE TO SOLVE 'IMPLICIT ANY' ERROR)
-// NOTE: These interfaces define the structure of the data records being iterated over.
+// CORE FINANCIAL INTERFACES
 // ============================================================
 
 /** Monthly breakdown of revenue/cost, including category details. */
@@ -72,6 +71,15 @@ export interface ZoneYearTotals {
     profitMargin: string;
 }
 
+/** * Company financial overview for the zone (Income/Cost/Profit).
+ * 💡 FIX: Added totalProfit field to match the state structure and enable center display.
+ */
+export interface ZoneCompanyFinancials {
+    totalProfit: number;
+    labels: string[];
+    series: number[];
+}
+
 /** Branch-wise financial data within a zone */
 export interface ZoneBranchFinancials {
     branchId: string | number;
@@ -87,12 +95,6 @@ export interface ZoneBranchFinancials {
             monthlyProfit: number[];
         };
     };
-}
-
-/** Company financial overview for the zone (Income/Cost/Profit) */
-export interface ZoneCompanyFinancials {
-    labels: string[];
-    series: number[];
 }
 
 // ============================================================
@@ -460,10 +462,14 @@ export const processZoneCompanyFinancialsByYear = (zoneBranches: FinanceBranch[]
     });
 
     const totalProfit = totalIncome - totalCost;
+    // NOTE: The `financeService` uses Math.abs(totalProfit) for the series value.
+    // We follow this pattern for consistency, ensuring the series values are non-negative for pie chart display.
+    const profitSeriesValue = Math.abs(totalProfit);
 
     return {
+        totalProfit: totalProfit, // 🔑 KEY FIX: Include totalProfit for the center display override
         labels: ['Income', 'Cost', 'Profit'],
-        series: [totalIncome, totalCost, totalProfit],
+        series: [totalIncome, totalCost, profitSeriesValue],
     };
 };
 

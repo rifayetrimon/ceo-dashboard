@@ -48,8 +48,11 @@ export default function PieChart({
 
     const defaultColors = isDark ? ['#5c1ac3', '#e2a03f', '#e7515a', '#2196f3', '#4caf50'] : ['#e2a03f', '#5c1ac3', '#e7515a', '#2196f3', '#4caf50'];
 
-    // FIX: Custom colors for Income (Green), Cost (Red), Profit (Blue: #2196f3)
+    // Define colors for the financial overview chart (Income/Cost/Profit)
     const financialColors = ['#00ab55', '#e7515a', '#2196f3'];
+
+    // 🎯 KEY FIX: Identify if this is a Financial Overview chart using title inclusion
+    const isFinancialOverview = title.includes('Financial Overview');
 
     const chartOptions: any = {
         chart: {
@@ -72,8 +75,8 @@ export default function PieChart({
             width: type === 'donut' ? 2 : 0,
             colors: [isDark ? '#0e1726' : '#fff'],
         },
-        // Apply custom colors for the financial overview chart
-        colors: title === 'Company Financial Overview' ? financialColors : colors || defaultColors,
+        // Apply custom colors if it's any financial overview chart
+        colors: isFinancialOverview ? financialColors : colors || defaultColors,
         legend: {
             position: 'bottom',
             horizontalAlign: 'center',
@@ -139,15 +142,17 @@ export default function PieChart({
                                   },
                                   total: {
                                       show: true,
-                                      // FIX: Display 'Net Profit' as the label
-                                      label: title === 'Company Financial Overview' ? 'Profit' : 'Total',
+                                      // 🎯 FIX 1: Display 'Profit' if it's any Financial Overview
+                                      label: isFinancialOverview ? 'Profit' : 'Total',
                                       fontSize: '16px',
                                       fontWeight: 600,
                                       color: isDark ? '#bfc9d4' : '#111827',
                                       formatter: (w: any) => {
                                           let centerValue: number;
-                                          if (title === 'Company Financial Overview' && w.globals.series.length >= 2) {
-                                              // FIX: Calculate Profit (Income - Cost) using the first two series values
+
+                                          // 🎯 FIX 2: Calculate Profit (Income - Cost) if it's a Financial Overview
+                                          if (isFinancialOverview && w.globals.series.length >= 2) {
+                                              // The data is ordered [Income, Cost, Profit]
                                               const income = w.globals.series[0] || 0;
                                               const cost = w.globals.series[1] || 0;
                                               centerValue = income - cost;
