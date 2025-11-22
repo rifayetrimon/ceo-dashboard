@@ -494,7 +494,7 @@ export default function ZoneDetailsDashboard() {
                     <div className="mb-6 grid gap-6 lg:grid-cols-3">
                         <div className="lg:col-span-2">
                             <AreaChart
-                                title={`Monthly Financial Overview (${selectedYear})`}
+                                title={`Monthly Financial Overview`}
                                 showDropdown={false}
                                 showYearFilter={true}
                                 yearOptions={availableYears}
