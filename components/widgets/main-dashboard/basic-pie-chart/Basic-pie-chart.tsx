@@ -46,6 +46,20 @@ export default function BasicPieChart({
         setIsMounted(true);
     }, []);
 
+    // Format value to M/K
+    const formatValue = (value: number): string => {
+        if (value === 0) return '0';
+        if (value >= 1000000) {
+            const millions = value / 1000000;
+            return millions.toFixed(2) + 'M';
+        }
+        if (value >= 1000) {
+            const thousands = value / 1000;
+            return thousands.toFixed(2) + 'K';
+        }
+        return value.toFixed(2);
+    };
+
     // Default colors if not provided
     const defaultColors = isDark ? ['#5c1ac3', '#e2a03f', '#e7515a', '#2196f3', '#4caf50'] : ['#e2a03f', '#5c1ac3', '#e7515a', '#2196f3', '#4caf50'];
 
@@ -121,7 +135,7 @@ export default function BasicPieChart({
             tooltip: {
                 enabled: true,
                 y: {
-                    formatter: (value: number) => value.toString(),
+                    formatter: (value: number) => `RM ${formatValue(value)}`,
                 },
             },
 

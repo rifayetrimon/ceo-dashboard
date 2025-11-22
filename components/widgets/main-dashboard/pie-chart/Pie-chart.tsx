@@ -46,6 +46,20 @@ export default function PieChart({
         setIsMounted(true);
     }, []);
 
+    // Format value to M/K
+    const formatValue = (value: number): string => {
+        if (value === 0) return '0';
+        if (value >= 1000000) {
+            const millions = value / 1000000;
+            return millions.toFixed(2) + 'M';
+        }
+        if (value >= 1000) {
+            const thousands = value / 1000;
+            return thousands.toFixed(2) + 'K';
+        }
+        return value.toFixed(2);
+    };
+
     const defaultColors = isDark ? ['#5c1ac3', '#e2a03f', '#e7515a', '#2196f3', '#4caf50'] : ['#e2a03f', '#5c1ac3', '#e7515a', '#2196f3', '#4caf50'];
 
     // Define colors for the financial overview chart (Income/Cost/Profit)
@@ -137,8 +151,8 @@ export default function PieChart({
                                       fontWeight: 700,
                                       color: isDark ? '#bfc9d4' : '#111827',
                                       offsetY: 8,
-                                      // On hover, show the value of the hovered slice (Income, Cost, or Profit)
-                                      formatter: (val: any) => `RM ${Number(val).toLocaleString()}`,
+                                      // On hover, show the value with M/K formatting
+                                      formatter: (val: any) => `RM ${formatValue(Number(val))}`,
                                   },
                                   total: {
                                       show: true,
@@ -160,7 +174,7 @@ export default function PieChart({
                                               // Default behavior: sum all series
                                               centerValue = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
                                           }
-                                          return `RM ${centerValue.toLocaleString()}`;
+                                          return `RM ${formatValue(centerValue)}`;
                                       },
                                   },
                               },
@@ -182,7 +196,7 @@ export default function PieChart({
         },
         tooltip: {
             y: {
-                formatter: (val: number) => `RM ${val.toLocaleString()}`,
+                formatter: (val: number) => `RM ${formatValue(val)}`,
             },
         },
     };
