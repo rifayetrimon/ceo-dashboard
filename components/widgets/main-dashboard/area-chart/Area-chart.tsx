@@ -320,15 +320,15 @@ export default function AreaChart({
 
     return (
         <div className={`panel h-full ${colSpan}`}>
-            {/* Header - Same style as PieChart */}
-            <div className="mb-5 flex items-center justify-between dark:text-white-light">
+            {/* Header - Responsive for mobile */}
+            <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 dark:text-white-light">
                 <h5 className="text-lg font-semibold">
                     {title}
                     {showYearFilter && selectedYear && <span className="ml-2">({selectedYear})</span>}
                 </h5>
 
-                <div className="flex items-center gap-3">
-                    {/* Year Filter Dropdown - Same style as PieChart */}
+                <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                    {/* Year Filter Dropdown */}
                     {showYearFilter && yearOptions.length > 0 && (
                         <div className="dropdown">
                             <Dropdown
@@ -357,7 +357,7 @@ export default function AreaChart({
                         </div>
                     )}
 
-                    {/* Options Dropdown - Same style as PieChart */}
+                    {/* Options Dropdown */}
                     {showDropdown && dropdownOptions && dropdownOptions.length > 0 && (
                         <div className="dropdown">
                             <Dropdown
@@ -380,9 +380,9 @@ export default function AreaChart({
                 </div>
             </div>
 
-            {/* Chart Area */}
+            {/* Chart Area - Responsive container */}
             <div className="relative">
-                <div className="rounded-lg bg-white dark:bg-black">
+                <div className="rounded-lg bg-white dark:bg-black overflow-x-auto">
                     {isMounted ? (
                         <ReactApexChart series={series} options={chartOptions} type="area" height={height} width={'100%'} />
                     ) : (

@@ -71,6 +71,7 @@ export default function PieChart({
     const chartOptions: any = {
         chart: {
             type: type,
+            // Keep height dynamic, will use CSS to control mobile height
             height: height,
             fontFamily: 'Nunito, sans-serif',
             zoom: {
@@ -121,16 +122,17 @@ export default function PieChart({
                 highlightDataSeries: true,
             },
         },
-        responsive: [
-            {
-                breakpoint: 480,
-                options: {
-                    chart: {
-                        width: 200,
-                    },
-                },
-            },
-        ],
+        // ❌ REMOVED overly restrictive mobile width setting
+        // responsive: [
+        //     {
+        //         breakpoint: 480,
+        //         options: {
+        //             chart: {
+        //                 width: 200,
+        //             },
+        //         },
+        //     },
+        // ],
         plotOptions:
             type === 'donut'
                 ? {
@@ -267,7 +269,8 @@ export default function PieChart({
                 </div>
             </div>
             <div>
-                <div className="rounded-lg bg-white dark:bg-black">
+                {/* 🎯 RESPONSIVE FIX: Apply max-height for mobile screens to prevent excessive vertical space */}
+                <div className="rounded-lg bg-white dark:bg-black max-h-[300px] sm:max-h-none" style={{ height: isMounted ? 'auto' : height }}>
                     {isMounted ? (
                         <>
                             <ReactApexChart series={series} options={chartOptions} type={type} height={height} width={'100%'} />
@@ -294,10 +297,20 @@ export default function PieChart({
                                     text-overflow: ellipsis !important;
                                     max-width: 150px !important;
                                 }
-                                @media (max-width: 768px) {
+                                /* 🎯 RESPONSIVE FIX: Stack legend items vertically on small mobile screens (< 640px) */
+                                @media (max-width: 639px) {
+                                    .apexcharts-legend {
+                                        padding: 5px 10px 0 10px !important;
+                                    }
                                     .apexcharts-legend-series {
+                                        /* Forces items onto new lines */
                                         flex: 0 0 100% !important;
                                         max-width: 100% !important;
+                                        justify-content: flex-start !important;
+                                        margin: 5px 0 !important;
+                                    }
+                                    .apexcharts-legend-text {
+                                        max-width: calc(100% - 30px) !important; /* Adjust max-width to fit on one line */
                                     }
                                 }
                             `}</style>

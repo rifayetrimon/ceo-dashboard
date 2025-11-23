@@ -139,16 +139,17 @@ export default function BasicPieChart({
                 },
             },
 
-            responsive: [
-                {
-                    breakpoint: 480,
-                    options: {
-                        chart: {
-                            width: 200,
-                        },
-                    },
-                },
-            ],
+            // ❌ REMOVED: This static width setting is counterproductive for fluid responsiveness.
+            // responsive: [
+            //     {
+            //         breakpoint: 480,
+            //         options: {
+            //             chart: {
+            //                 width: 200,
+            //             },
+            //         },
+            //     },
+            // ],
         },
     };
 
@@ -225,7 +226,8 @@ export default function BasicPieChart({
 
             {/* Chart Area */}
             <div>
-                <div className="rounded-lg bg-white dark:bg-black">
+                {/* 🎯 RESPONSIVE FIX: Apply max-height for mobile screens, keeping original height for tablet/PC */}
+                <div className="rounded-lg bg-white dark:bg-black max-h-[300px] sm:max-h-none" style={{ height: isMounted ? 'auto' : height }}>
                     {isMounted ? (
                         <>
                             <ReactApexChart series={pieChart.series} options={pieChart.options} type="pie" height={height} width="100%" />
@@ -242,6 +244,7 @@ export default function BasicPieChart({
                                     display: inline-flex !important;
                                     align-items: center !important;
                                     margin: 0 !important;
+                                    /* Keep 50% width for tablet/PC as it was */
                                     flex: 0 0 calc(50% - 10px) !important;
                                     max-width: calc(50% - 10px) !important;
                                 }
@@ -251,10 +254,20 @@ export default function BasicPieChart({
                                     text-overflow: ellipsis !important;
                                     max-width: 120px !important;
                                 }
-                                @media (max-width: 768px) {
+                                /* 🎯 RESPONSIVE FIX: Stack legend items vertically on small mobile screens (< 640px) */
+                                @media (max-width: 639px) {
+                                    .apexcharts-legend {
+                                        padding: 5px 10px !important;
+                                    }
                                     .apexcharts-legend-series {
+                                        /* Forces items onto new lines for mobile */
                                         flex: 0 0 100% !important;
                                         max-width: 100% !important;
+                                        justify-content: flex-start !important;
+                                        margin: 5px 0 !important;
+                                    }
+                                    .apexcharts-legend-text {
+                                        max-width: calc(100% - 30px) !important; /* Adjust max-width to fit on one line */
                                     }
                                 }
                             `}</style>
