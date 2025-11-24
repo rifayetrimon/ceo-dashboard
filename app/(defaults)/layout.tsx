@@ -9,8 +9,12 @@ import Setting from '@/components/layouts/setting';
 import Sidebar from '@/components/layouts/sidebar';
 import Portals from '@/components/portals';
 import LoginGuard from '@/components/guards/LoginGuard';
+import { usePathname } from 'next/navigation';
 
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const isHomePage = pathname === '/';
+
     return (
         <LoginGuard>
             <div className="relative">
@@ -19,10 +23,10 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                 <Setting />
 
                 <MainContainer>
-                    {/* ALWAYS SHOW SIDEBAR */}
-                    <Sidebar />
+                    {/* RENDER SIDEBAR ONLY ON NON-HOME PAGES */}
+                    {!isHomePage && <Sidebar />}
 
-                    <div className="main-content flex min-h-screen flex-col">
+                    <div className={`main-content flex min-h-screen flex-col ${isHomePage ? 'ltr:!ml-0 rtl:!mr-0' : ''}`}>
                         <Header />
                         <ContentAnimation>{children}</ContentAnimation>
                         <Footer />

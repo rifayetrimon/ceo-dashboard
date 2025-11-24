@@ -61,7 +61,9 @@ const Header = () => {
             }
         }
     }, [pathname]);
-    const hideSidebar = pathname === '/';
+
+    const isHomePage = pathname === '/';
+    const sidebarOpen = useSelector((state: IRootState) => state.themeConfig.sidebar);
 
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
 
@@ -144,23 +146,28 @@ const Header = () => {
         <header className={`z-40 ${themeConfig.semidark && themeConfig.menu === 'horizontal' ? 'dark' : ''}`}>
             <div className="shadow-sm">
                 <div className="relative flex w-full items-center bg-white px-5 py-2.5 dark:bg-black">
-                    <div className="horizontal-logo flex items-center justify-between ltr:mr-2 rtl:ml-2 lg:hidden">
-                        <Link href="/" className="main-logo flex shrink-0 items-center">
-                            <Image className="inline w-8 ltr:-ml-1 rtl:-mr-1" src={`${basePath}/assets/images/logo2.svg`} alt="logo" width={32} height={32} />
-                            <span className="hidden align-middle text-2xl  font-semibold  transition-all duration-300 ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light md:inline">EBOSS</span>
-                        </Link>
-                        {!hideSidebar && (
-                            <button type="button" className="text-gray-600 dark:text-gray-300 hover:text-primary" onClick={() => dispatch(toggleSidebar())}>
-                                <IconMenu className="w-6 h-6" />
-                            </button>
+                    {/* Logo and sidebar toggle section */}
+                    <div className="horizontal-logo flex items-center ltr:mr-2 rtl:ml-2">
+                        {/* Show toggle button and logo when: on home page OR sidebar is open (sidebarOpen = true means sidebar is actually open/visible) */}
+                        {(isHomePage || sidebarOpen) && (
+                            <>
+                                {/* Show logo */}
+                                <Link href="/" className="main-logo flex shrink-0 items-center">
+                                    <Image className="inline w-8 ltr:-ml-1 rtl:-mr-1" src={`${basePath}/assets/images/logo2.svg`} alt="logo" width={32} height={32} />
+                                    <span className="align-middle text-2xl font-semibold transition-all duration-300 ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light">EBOSS</span>
+                                </Link>
+                                {/* Show toggle button only on dashboard pages */}
+                                {!isHomePage && (
+                                    <button
+                                        type="button"
+                                        className="collapse-icon flex h-8 w-8 items-center rounded-full transition duration-300 hover:bg-gray-500/10 ltr:mr-2 rtl:ml-2 dark:text-white-light dark:hover:bg-dark-light/10"
+                                        onClick={() => dispatch(toggleSidebar())}
+                                    >
+                                        <IconMenu className="h-5 w-5" />
+                                    </button>
+                                )}
+                            </>
                         )}
-                        {/* <button
-                            type="button"
-                            className="collapse-icon flex flex-none rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary ltr:ml-2 rtl:mr-2 dark:bg-dark/40 dark:text-[#d0d2d6] dark:hover:bg-dark/60 dark:hover:text-primary lg:hidden"
-                            onClick={() => dispatch(toggleSidebar())}
-                        >
-                            <IconMenu className="h-5 w-5" />
-                        </button> */}
                     </div>
 
                     {/* search button */}
@@ -259,7 +266,6 @@ const Header = () => {
                                                         setLocale(item.code);
                                                     }}
                                                 >
-                                                    {/* <img src={`${basePath}/assets/images/flags/${item.code.toUpperCase()}.svg`} alt="flag" className="h-5 w-5 rounded-full object-cover" /> */}
                                                     <Image
                                                         src={`${basePath}/assets/images/flags/${item.code.toUpperCase()}.svg`}
                                                         alt="flag"
@@ -305,7 +311,6 @@ const Header = () => {
                                                         <div className="group flex items-center px-4 py-2">
                                                             <div className="grid place-content-center rounded">
                                                                 <div className="relative h-12 w-12">
-                                                                    {/* <img className="h-12 w-12 rounded-full object-cover" alt="profile" src={`${basePath}/assets/images/${notification.profile}`} /> */}
                                                                     <Image
                                                                         className="h-12 w-12 rounded-full object-cover"
                                                                         alt="profile"
@@ -369,17 +374,11 @@ const Header = () => {
                                         width={36}
                                         height={36}
                                     />
-                                    // <img
-                                    //     className="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100"
-                                    //     src={data?.file_profile_url || `${basePath}/assets/images/user-profile.jpeg`} // || '/default-avatar.png'
-                                    //     alt="userProfile"
-                                    // />
                                 }
                             >
                                 <ul className="w-[230px] !py-0 font-semibold text-dark dark:text-white-dark dark:text-white-light/90">
                                     <li>
                                         <div className="flex items-center px-4 py-4">
-                                            {/* <img className="h-10 w-10 rounded-md object-cover" src={`${basePath}/assets/images/user-profile.jpeg`} alt="userProfile" /> */}
                                             <Image
                                                 className="h-10 w-10 rounded-md object-cover"
                                                 src={data?.personal.file_profile_url || `${basePath}/assets/images/user-profile.jpeg`}
@@ -405,23 +404,11 @@ const Header = () => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/apps/mailbox" className="dark:hover:text-white">
-                                            <IconMail className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
-                                            Inbox
-                                        </Link>
-                                    </li>
-                                    <li>
                                         <Link href="/auth/boxed-lockscreen" className="dark:hover:text-white">
                                             <IconLockDots className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                                             Lock Screen
                                         </Link>
                                     </li>
-                                    {/* <li className="border-t border-white-light dark:border-white-light/10">
-                                        <Link href="/auth/boxed-signin" className="!py-3 text-danger">
-                                            <IconLogout className="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
-                                            Sign Out
-                                        </Link>
-                                    </li> */}
                                     <li className="border-t border-white-light dark:border-white-light/10">
                                         <button onClick={logout} className="flex w-full items-center !py-3 text-danger">
                                             <IconLogout className="h-4.5 w-4.5 shrink-0 rotate-90 ltr:mr-2 rtl:ml-2" />
