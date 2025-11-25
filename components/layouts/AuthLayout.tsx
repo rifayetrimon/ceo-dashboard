@@ -25,7 +25,7 @@ export default function AuthLayout({ children, showBackButton = true, backToAppC
         <div className="relative">
             {/* Background Layer */}
             <div className="absolute inset-0">
-                <Image src={`${basePath}/assets/images/auth/new-bg1.jpg`} alt="background" fill sizes="100vw" priority className="h-full w-full object-cover" />
+                <Image src={`${basePath}/assets/images/auth/new-bg1.png`} alt="background" fill sizes="100vw" priority className="h-full w-full object-cover" />
             </div>
 
             <div

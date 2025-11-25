@@ -184,7 +184,7 @@ export default function ZoneDetailsDashboard() {
 
     const [zoneTotals, setZoneTotals] = useState({
         revenue: 0,
-        cost: 0,
+        cost: 0, // This state key remains 'cost'
         profit: 0,
         profitMargin: '0.00',
     });
@@ -193,6 +193,7 @@ export default function ZoneDetailsDashboard() {
         labels: [],
         series: [],
     });
+    // State remains 'costCategoryChartData' and 'costCategorySelectedYear'
     const [costCategoryChartData, setCostCategoryChartData] = useState<{ labels: string[]; series: number[] }>({
         labels: [],
         series: [],
@@ -231,7 +232,7 @@ export default function ZoneDetailsDashboard() {
     const [systemBranches, setSystemBranches] = useState<any[]>([]);
 
     // ============================================================
-    // LIFECYCLE & DATA FETCHING
+    // LIFECYCLE & DATA FETCHING (unchanged)
     // ============================================================
 
     useEffect(() => {
@@ -298,7 +299,7 @@ export default function ZoneDetailsDashboard() {
     };
 
     // ============================================================
-    // CHART UPDATE FUNCTIONS
+    // CHART UPDATE FUNCTIONS (unchanged)
     // ============================================================
 
     const updateStatCards = (info: ZoneSystemInfo) => {
@@ -388,7 +389,14 @@ export default function ZoneDetailsDashboard() {
     const yearlyFinancialSeries = useMemo(() => {
         if (!zoneFinancialData) return [];
         const result = getZoneYearlyFinancialSeries(zoneFinancialData);
-        return result && result.series ? result.series : [];
+
+        // FIX 4: Map series name for display
+        return result && result.series
+            ? result.series.map((s: any) => ({
+                  ...s,
+                  name: s.name === 'Cost' ? 'Expense' : s.name,
+              }))
+            : [];
     }, [zoneFinancialData]);
 
     const zoneYearlyProfitData = useMemo(() => {
@@ -397,7 +405,7 @@ export default function ZoneDetailsDashboard() {
     }, [zoneFinancialData]);
 
     // ============================================================
-    // EVENT HANDLERS
+    // EVENT HANDLERS (unchanged)
     // ============================================================
 
     const handleYearChange = (year: string) => {
@@ -418,7 +426,7 @@ export default function ZoneDetailsDashboard() {
     };
 
     // ============================================================
-    // TABLE CONFIGURATION
+    // TABLE CONFIGURATION (unchanged)
     // ============================================================
 
     const outstandingAmountColumns: TableColumn[] = [
@@ -445,7 +453,7 @@ export default function ZoneDetailsDashboard() {
     };
 
     // ============================================================
-    // LOADING STATE
+    // LOADING STATE (unchanged)
     // ============================================================
 
     if (loading || !zoneName) {
@@ -458,7 +466,7 @@ export default function ZoneDetailsDashboard() {
     }
 
     // ============================================================
-    // RENDER
+    // RENDER (Display Text Changes Applied)
     // ============================================================
 
     const chartLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -498,7 +506,11 @@ export default function ZoneDetailsDashboard() {
                                 showDropdown={false}
                                 showYearFilter={true}
                                 yearOptions={availableYears}
-                                series={chartSeries}
+                                // FIX 1: Map series name for display
+                                series={chartSeries.map((s: any) => ({
+                                    ...s,
+                                    name: s.name === 'Cost' ? 'Expense' : s.name,
+                                }))}
                                 labels={chartLabels}
                                 height={325}
                                 onYearSelect={handleYearChange}
@@ -518,7 +530,8 @@ export default function ZoneDetailsDashboard() {
                             <PieChart
                                 title={`${zoneName} Financial Overview`}
                                 series={zoneFinancialPieData.series}
-                                labels={zoneFinancialPieData.labels}
+                                // FIX 2: Map label name for display
+                                labels={zoneFinancialPieData.labels.map((label) => (label === 'Cost' ? 'Expense' : label))}
                                 height={340}
                                 showDropdown={false}
                                 showYearFilter={true}
@@ -550,7 +563,7 @@ export default function ZoneDetailsDashboard() {
                         />
 
                         <BasicPieChart
-                            chartTitle="Cost By Category (Zone)"
+                            chartTitle="Expense By Category (Zone)" // FIX 3a: Change chart title here
                             series={costCategoryChartData.series}
                             labels={costCategoryChartData.labels}
                             colors={['#e7515a', '#e2a03f', '#805dca', '#4361ee', '#2196f3', '#00ab55']}
@@ -564,7 +577,7 @@ export default function ZoneDetailsDashboard() {
 
                         <div className="md:col-span-2 lg:col-span-1">
                             <PieChart
-                                title="Expense By Category (Zone)"
+                                title="Expense By Category (Zone)" // FIX 3b: Change chart title here
                                 series={expenseCategoryChartData.series}
                                 labels={expenseCategoryChartData.labels}
                                 height={340}
@@ -584,7 +597,11 @@ export default function ZoneDetailsDashboard() {
                                 title={`${zoneName} Yearly Financial Overview`}
                                 showYearFilter={false}
                                 showDropdown={false}
-                                series={yearlyFinancialSeries}
+                                // FIX 5: Map series name for display
+                                series={yearlyFinancialSeries.map((s: any) => ({
+                                    ...s,
+                                    name: s.name === 'Cost' ? 'Expense' : s.name,
+                                }))}
                                 labels={zoneYearlyChartLabels}
                                 height={325}
                                 yAxisFormatter={(value: number) => {
@@ -616,7 +633,10 @@ export default function ZoneDetailsDashboard() {
                         {branchComparisonData.categories.length > 0 ? (
                             <ZoneBar
                                 chartTitle={`Branch Financial Breakdown`}
-                                series={branchComparisonData.series}
+                                series={branchComparisonData.series.map((s: any) => ({
+                                    ...s,
+                                    name: s.name === 'Cost' ? 'Expense' : s.name, // FIX 6: Map series name for display
+                                }))}
                                 categories={branchComparisonData.categories}
                                 colors={['#10b981', '#ef4444', '#8b5cf6']}
                                 negativeColor="#FF4757"

@@ -35,6 +35,18 @@ import {
     getLatestYearsProfitData,
 } from '@/services/sales/financeService';
 
+// 💡 FIX 1: Define a type alias to tell the component that the 'cost' data
+// coming from the service should be locally treated as 'expense' for compatibility
+// with the new variable names and display requirements.
+type LocalYearTotals = {
+    revenue: number;
+    cost: number; // The actual property name returned by the service function
+    profit: number;
+    profitMargin: string;
+    // We also define 'expense' as an alias for 'cost' for local usage where needed:
+    expense: number;
+};
+
 // ============================================================
 // HELPER FUNCTIONS (unchanged)
 // ============================================================
@@ -178,6 +190,7 @@ export default function FinanceDashboard() {
     const [availableYears, setAvailableYears] = useState<string[]>([]);
     const [rawBranchData, setRawBranchData] = useState<any[]>([]);
 
+    // State variable remains 'cost' to match function outputs, but display is 'Expense'
     const [financeTotals, setFinanceTotals] = useState({ revenue: 0, cost: 0, profit: 0, profitMargin: '0.00' });
     const [yearlyProfitData, setYearlyProfitData] = useState<{ years: string[]; profitData: number[] }>({ years: [], profitData: [] });
 
@@ -202,23 +215,24 @@ export default function FinanceDashboard() {
 
     /**
      * Calculate year-wise totals for the yearly financial overview chart
-     * FIX: Returns years sorted ASCENDINGLY for chronological order on X-axis.
      */
     const yearlyFinancialSeries = useMemo(() => {
         if (!financeData) return { series: [], labels: [] };
 
-        // 1. Get available years and sort them in ASCENDING order (e.g., 2023, 2024, 2025)
         const years = [...financeData.years].sort((a, b) => a.localeCompare(b));
 
         const revenueData: number[] = [];
-        const costData: number[] = [];
+        const costData: number[] = []; // Remains 'cost' internally
         const profitData: number[] = [];
 
         // 2. Iterate over the ASCENDING years list
         years.forEach((year) => {
-            const yearTotals = calculateYearTotals(financeData, year);
+            // FIX 2: Cast the output of calculateYearTotals to include the 'expense' property.
+            const yearTotals = calculateYearTotals(financeData, year) as LocalYearTotals;
+            yearTotals.expense = yearTotals.cost; // Manually map the data for local usage where 'expense' is expected.
+
             revenueData.push(yearTotals.revenue);
-            costData.push(yearTotals.cost);
+            costData.push(yearTotals.cost); // Use the original 'cost' key for internal data arrays
             profitData.push(yearTotals.profit);
         });
 
@@ -226,10 +240,10 @@ export default function FinanceDashboard() {
         return {
             series: [
                 { name: 'Income', data: revenueData },
-                { name: 'Cost', data: costData },
+                { name: 'Expense', data: costData }, // FIX 3: Display name changed to 'Expense'
                 { name: 'Profit', data: profitData },
             ],
-            labels: years, // Use the ascendingly sorted years for labels
+            labels: years,
         };
     }, [financeData]);
 
@@ -382,7 +396,7 @@ export default function FinanceDashboard() {
                     if (latestYearData) {
                         setFinanceTotals({
                             revenue: latestYearData.totalIncome,
-                            cost: latestYearData.totalExpense,
+                            cost: latestYearData.totalExpense, // We use 'totalExpense' from the yearWiseTotals structure
                             profit: latestYearData.totalProfit,
                             profitMargin: latestYearData.totalIncome > 0 ? ((latestYearData.totalProfit / latestYearData.totalIncome) * 100).toFixed(2) : '0.00',
                         });
@@ -441,6 +455,8 @@ export default function FinanceDashboard() {
         if (!processedData) return;
         const series = getChartSeriesForYear(processedData, year, true, true, false);
         setChartSeries(series);
+
+        // FIX 4: Correctly set the totals. The component expects {cost: X}, but the service returns {cost: X}.
         const totals = calculateYearTotals(processedData, year);
         setFinanceTotals(totals);
     };
@@ -462,7 +478,7 @@ export default function FinanceDashboard() {
     };
 
     // ============================================================
-    // EVENT HANDLERS (unchanged logic)
+    // EVENT HANDLERS (unchanged logic, except display mapping)
     // ============================================================
     const handleYearChange = (year: string) => {
         setSelectedYear(year);
@@ -473,7 +489,7 @@ export default function FinanceDashboard() {
             const yearData = dashboardMetrics.yearWiseTotals[year];
             setFinanceTotals({
                 revenue: yearData.totalIncome,
-                cost: yearData.totalExpense,
+                cost: yearData.totalExpense, // Mapped totalExpense to the 'cost' state key
                 profit: yearData.totalProfit,
                 profitMargin: yearData.totalIncome > 0 ? ((yearData.totalProfit / yearData.totalIncome) * 100).toFixed(2) : '0.00',
             });
@@ -636,7 +652,10 @@ export default function FinanceDashboard() {
                                 showYearFilter={true}
                                 yearOptions={financeData?.years || []}
                                 showDropdown={false}
-                                series={chartSeries}
+                                series={chartSeries.map((s) => ({
+                                    ...s,
+                                    name: s.name === 'Cost' ? 'Expense' : s.name, // FIX: Map series name for display
+                                }))}
                                 labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
                                 height={325}
                                 onYearSelect={handleYearChange}
@@ -656,7 +675,7 @@ export default function FinanceDashboard() {
                             <PieChart
                                 title="Company Financial Overview"
                                 series={companyFinancialData.series}
-                                labels={companyFinancialData.labels}
+                                labels={companyFinancialData.labels.map((label) => (label === 'Cost' ? 'Expense' : label))} // FIX: Map label name for display
                                 height={340}
                                 showDropdown={false}
                                 showYearFilter={true}
@@ -690,13 +709,12 @@ export default function FinanceDashboard() {
                         />
 
                         <BasicPieChart
-                            chartTitle="Cost By Category"
+                            chartTitle="Expense By Category" // FIX: Change chart title here
                             series={costCategoryChartData.series}
                             labels={costCategoryChartData.labels}
                             colors={['#e7515a', '#e2a03f', '#805dca', '#4361ee', '#2196f3', '#00ab55']}
                             height={340}
                             showYearFilter={true}
-                            yearOptions={availableYears}
                             selectedYear={costCategorySelectedYear}
                             onYearChange={handleCostCategoryYearChange}
                             showDropdown={false}
@@ -733,8 +751,11 @@ export default function FinanceDashboard() {
                                 showYearFilter={false}
                                 yearOptions={financeData?.years || []}
                                 showDropdown={false}
-                                series={yearlyFinancialSeries.series}
-                                labels={yearlyFinancialSeries.labels} // FIX: Now sorted ascendingly
+                                series={yearlyFinancialSeries.series.map((s) => ({
+                                    ...s,
+                                    name: s.name === 'Cost' ? 'Expense' : s.name, // FIX: Map series name for display
+                                }))}
+                                labels={yearlyFinancialSeries.labels}
                                 height={325}
                                 yAxisFormatter={(value: number) => {
                                     if (value >= 1000000) {
