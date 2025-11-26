@@ -16,7 +16,6 @@ import IconTwitter from '@/components/icon/icon-twitter';
 import Link from 'next/link';
 import React from 'react';
 import { useProfile } from '@/hook/user/useProfile';
-import { basePath } from '@/lib/basePath';
 import Image from 'next/image';
 
 const Profile = () => {
@@ -46,7 +45,7 @@ const Profile = () => {
                         <div className="mb-5">
                             <div className="flex flex-col items-center justify-center">
                                 <Image
-                                    src={data?.personal.file_profile_url || `${basePath}/assets/images/user-profile.jpeg`}
+                                    src={data?.personal.file_profile_url || `/assets/images/user-profile.jpeg`}
                                     alt="Profile picture"
                                     width={96}
                                     height={96}
@@ -274,7 +273,7 @@ const Profile = () => {
                             <div className="border-b border-[#ebedf2] dark:border-[#1b2e4b]">
                                 <div className="flex items-center justify-between py-2">
                                     <div className="flex-none">
-                                        <Image src={`${basePath}/assets/images/card-americanexpress.svg`} alt="American Express" width={40} height={25} unoptimized />
+                                        <Image src={`/assets/images/card-americanexpress.svg`} alt="American Express" width={40} height={25} unoptimized />
                                     </div>
                                     <div className="flex flex-auto items-center justify-between ltr:ml-4 rtl:mr-4">
                                         <h6 className="font-semibold text-[#515365] dark:text-white-dark">
@@ -288,7 +287,7 @@ const Profile = () => {
                             <div className="border-b border-[#ebedf2] dark:border-[#1b2e4b]">
                                 <div className="flex items-center justify-between py-2">
                                     <div className="flex-none">
-                                        <Image src={`${basePath}/assets/images/card-mastercard.svg`} alt="Mastercard" width={40} height={25} unoptimized />
+                                        <Image src={`/assets/images/card-mastercard.svg`} alt="Mastercard" width={40} height={25} unoptimized />
                                     </div>
                                     <div className="flex flex-auto items-center justify-between ltr:ml-4 rtl:mr-4">
                                         <h6 className="font-semibold text-[#515365] dark:text-white-dark">
@@ -301,7 +300,7 @@ const Profile = () => {
                             <div>
                                 <div className="flex items-center justify-between py-2">
                                     <div className="flex-none">
-                                        <Image src={`${basePath}/assets/images/card-visa.svg`} alt="Visa" width={40} height={25} unoptimized />
+                                        <Image src={`/assets/images/card-visa.svg`} alt="Visa" width={40} height={25} unoptimized />
                                     </div>
                                     <div className="flex flex-auto items-center justify-between ltr:ml-4 rtl:mr-4">
                                         <h6 className="font-semibold text-[#515365] dark:text-white-dark">

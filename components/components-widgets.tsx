@@ -35,7 +35,6 @@ import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { useSelector } from 'react-redux';
-import { basePath } from '@/lib/basePath';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 
 const ComponentsWidgets = () => {
@@ -1126,11 +1125,7 @@ const ComponentsWidgets = () => {
                         <div className="min-h-[190px] bg-gradient-to-r from-[#4361ee] to-[#160f6b] p-6">
                             <div className="mb-6 flex items-center justify-between">
                                 <div className="flex items-center rounded-full bg-black/50 p-1 font-semibold text-white ltr:pr-3 rtl:pl-3">
-                                    <Image
-                                        className="block h-8 w-8 rounded-full border-2 border-white/50 object-cover ltr:mr-1 rtl:ml-1"
-                                        src={`${basePath}/assets/images/profile-34.jpeg`}
-                                        alt="avatar"
-                                    />
+                                    <Image className="block h-8 w-8 rounded-full border-2 border-white/50 object-cover ltr:mr-1 rtl:ml-1" src={`/assets/images/profile-34.jpeg`} alt="avatar" />
                                     Alan Green
                                 </div>
                                 <button type="button" className="flex h-9 w-9 items-center justify-between rounded-md bg-black text-white hover:opacity-80 ltr:ml-auto rtl:mr-auto">
@@ -1213,13 +1208,7 @@ const ComponentsWidgets = () => {
                                         <td className="min-w-[150px] text-black dark:text-white">
                                             <div className="flex items-center">
                                                 {/* <img className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src="/assets/images/profile-6.jpeg" alt="avatar" /> */}
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/profile-6.jpeg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/profile-6.jpeg`} alt="avatar" width={32} height={32} />
                                                 <span className="whitespace-nowrap">Luke Ivory</span>
                                             </div>
                                         </td>
@@ -1236,13 +1225,7 @@ const ComponentsWidgets = () => {
                                         <td className="text-black dark:text-white">
                                             <div className="flex items-center">
                                                 {/* <img className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src="/assets/images/profile-7.jpeg" alt="avatar" /> */}
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/profile-7.jpeg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/profile-7.jpeg`} alt="avatar" width={32} height={32} />
                                                 <span className="whitespace-nowrap">Andy King</span>
                                             </div>
                                         </td>
@@ -1258,13 +1241,7 @@ const ComponentsWidgets = () => {
                                     <tr className="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                                         <td className="text-black dark:text-white">
                                             <div className="flex items-center">
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/profile-8.jpeg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/profile-8.jpeg`} alt="avatar" width={32} height={32} />
                                                 <span className="whitespace-nowrap">Laurie Fox</span>
                                             </div>
                                         </td>
@@ -1280,13 +1257,7 @@ const ComponentsWidgets = () => {
                                     <tr className="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                                         <td className="text-black dark:text-white">
                                             <div className="flex items-center">
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/profile-9.jpeg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/profile-9.jpeg`} alt="avatar" width={32} height={32} />
                                                 <span className="whitespace-nowrap">Ryan Collins</span>
                                             </div>
                                         </td>
@@ -1302,13 +1273,7 @@ const ComponentsWidgets = () => {
                                     <tr className="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                                         <td className="text-black dark:text-white">
                                             <div className="flex items-center">
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/profile-10.jpeg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/profile-10.jpeg`} alt="avatar" width={32} height={32} />
                                                 <span className="whitespace-nowrap">Irene Collins</span>
                                             </div>
                                         </td>
@@ -1347,7 +1312,7 @@ const ComponentsWidgets = () => {
                                             <div className="flex">
                                                 <Image
                                                     className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/product-headphones.jpg`}
+                                                    src={`/assets/images/product-headphones.jpg`}
                                                     alt="avatar"
                                                     width={32}
                                                     height={32}
@@ -1371,13 +1336,7 @@ const ComponentsWidgets = () => {
                                     <tr className="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                                         <td className="text-black dark:text-white">
                                             <div className="flex">
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/product-shoes.jpg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/product-shoes.jpg`} alt="avatar" width={32} height={32} />
                                                 <p className="whitespace-nowrap">
                                                     Shoes <span className="block text-xs text-warning">Faishon</span>
                                                 </p>
@@ -1396,13 +1355,7 @@ const ComponentsWidgets = () => {
                                     <tr className="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                                         <td className="text-black dark:text-white">
                                             <div className="flex">
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/product-watch.jpg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/product-watch.jpg`} alt="avatar" width={32} height={32} />
                                                 <p className="whitespace-nowrap">
                                                     Watch <span className="block text-xs text-danger">Accessories</span>
                                                 </p>
@@ -1421,13 +1374,7 @@ const ComponentsWidgets = () => {
                                     <tr className="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                                         <td className="text-black dark:text-white">
                                             <div className="flex">
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/product-laptop.jpg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/product-laptop.jpg`} alt="avatar" width={32} height={32} />
                                                 <p className="whitespace-nowrap">
                                                     Laptop <span className="block text-xs text-primary">Digital</span>
                                                 </p>
@@ -1446,13 +1393,7 @@ const ComponentsWidgets = () => {
                                     <tr className="group text-white-dark hover:text-black dark:hover:text-white-light/90">
                                         <td className="text-black dark:text-white">
                                             <div className="flex">
-                                                <Image
-                                                    className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3"
-                                                    src={`${basePath}/assets/images/product-camera.jpg`}
-                                                    alt="avatar"
-                                                    width={32}
-                                                    height={32}
-                                                />
+                                                <Image className="h-8 w-8 rounded-md object-cover ltr:mr-3 rtl:ml-3" src={`/assets/images/product-camera.jpg`} alt="avatar" width={32} height={32} />
                                                 <p className="whitespace-nowrap">
                                                     Camera <span className="block text-xs text-primary">Digital</span>
                                                 </p>
@@ -1865,7 +1806,7 @@ const ComponentsWidgets = () => {
                     <div className="panel h-full">
                         <div className="-m-5 mb-5 flex  items-start border-b border-white-light p-5 dark:border-[#1b2e4b]">
                             <div className="shrink-0 rounded-full ring-2 ring-white-light dark:ring-dark ltr:mr-4 rtl:ml-4">
-                                <Image src={`${basePath}/assets/images/profile-1.jpeg`} alt="profile1" className="h-10 w-10 rounded-full object-cover" width={40} height={40} />
+                                <Image src={`/assets/images/profile-1.jpeg`} alt="profile1" className="h-10 w-10 rounded-full object-cover" width={40} height={40} />
                             </div>
                             <div className="font-semibold">
                                 <h6>Jimmy Turner</h6>
@@ -1896,7 +1837,7 @@ const ComponentsWidgets = () => {
                             <div className="flex">
                                 <div className="media-aside align-self-start">
                                     <div className="shrink-0 rounded-full ring-2 ring-white-light dark:ring-dark ltr:mr-4 rtl:ml-4">
-                                        <Image src={`${basePath}/assets/images/g-8.png`} alt="profile2" className="h-10 w-10 rounded-full object-cover" width={40} height={40} />
+                                        <Image src={`/assets/images/g-8.png`} alt="profile2" className="h-10 w-10 rounded-full object-cover" width={40} height={40} />
                                     </div>
                                 </div>
                                 <div className="font-semibold">
@@ -1910,28 +1851,28 @@ const ComponentsWidgets = () => {
                             <div className="flex items-center justify-center gap-3 pb-8">
                                 <Image
                                     className="h-10 w-10 overflow-hidden rounded-lg object-cover ring-2 ring-white-light dark:ring-dark"
-                                    src={`${basePath}/assets/images/profile-1.jpeg`}
+                                    src={`/assets/images/profile-1.jpeg`}
                                     alt="profile1"
                                     width={40}
                                     height={40}
                                 />
                                 <Image
                                     className="h-10 w-10 overflow-hidden rounded-lg object-cover ring-2 ring-white-light dark:ring-dark"
-                                    src={`${basePath}/assets/images/profile-2.jpeg`}
+                                    src={`/assets/images/profile-2.jpeg`}
                                     alt="profile2"
                                     width={40}
                                     height={40}
                                 />
                                 <Image
                                     className="h-10 w-10 overflow-hidden rounded-lg object-cover ring-2 ring-white-light dark:ring-dark"
-                                    src={`${basePath}/assets/images/profile-3.jpeg`}
+                                    src={`/assets/images/profile-3.jpeg`}
                                     alt="profile3"
                                     width={40}
                                     height={40}
                                 />
                                 <Image
                                     className="h-10 w-10 overflow-hidden rounded-lg object-cover ring-2 ring-white-light dark:ring-dark"
-                                    src={`${basePath}/assets/images/profile-4.jpeg`}
+                                    src={`/assets/images/profile-4.jpeg`}
                                     alt="profile4"
                                     width={40}
                                     height={40}
@@ -2001,21 +1942,21 @@ const ComponentsWidgets = () => {
                                     </span>
                                     <Image
                                         className="h-9 w-9 rounded-full border-2 border-white object-cover transition-all duration-300 dark:border-dark"
-                                        src={`${basePath}/assets/images/profile-6.jpeg`}
+                                        src={`/assets/images/profile-6.jpeg`}
                                         alt="profile6"
                                         width={36}
                                         height={36}
                                     />
                                     <Image
                                         className="h-9 w-9 rounded-full border-2 border-white object-cover transition-all duration-300 dark:border-dark"
-                                        src={`${basePath}/assets/images/profile-7.jpeg`}
+                                        src={`/assets/images/profile-7.jpeg`}
                                         alt="profile7"
                                         width={36}
                                         height={36}
                                     />
                                     <Image
                                         className="h-9 w-9 rounded-full border-2 border-white object-cover transition-all duration-300 dark:border-dark"
-                                        src={`${basePath}/assets/images/profile-8.jpeg`}
+                                        src={`/assets/images/profile-8.jpeg`}
                                         alt="profile8"
                                         width={36}
                                         height={36}

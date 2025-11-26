@@ -1,7 +1,6 @@
 // components/layouts/AuthLayout.tsx
 'use client';
 
-import { basePath } from '@/lib/basePath';
 import LanguageDropdown from '@/components/language-dropdown';
 import { useRouter, usePathname } from 'next/navigation';
 import { FaArrowLeftLong } from 'react-icons/fa6';
@@ -25,7 +24,7 @@ export default function AuthLayout({ children, showBackButton = true, backToAppC
         <div className="relative">
             {/* Background Layer */}
             <div className="absolute inset-0">
-                <Image src={`${basePath}/assets/images/auth/new-bg1.png`} alt="background" fill sizes="100vw" priority className="h-full w-full object-cover" />
+                <Image src={`/assets/images/auth/new-bg1.png`} alt="background" fill sizes="100vw" priority className="h-full w-full object-cover" />
             </div>
 
             <div

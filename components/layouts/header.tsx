@@ -23,7 +23,6 @@ import IconCaretDown from '@/components/icon/icon-caret-down';
 import { usePathname, useRouter } from 'next/navigation';
 import { getTranslation } from '@/i18n';
 import { useProfile } from '@/hook/user/useProfile';
-import { basePath } from '@/lib/basePath';
 import { useLogout } from '@/hook/auth/useLogout';
 
 const Header = () => {
@@ -153,7 +152,7 @@ const Header = () => {
                             <>
                                 {/* Show logo */}
                                 <Link href="/" className="main-logo flex shrink-0 items-center">
-                                    <Image className="inline w-8 ltr:-ml-1 rtl:-mr-1" src={`${basePath}/assets/images/logo2.svg`} alt="logo" width={32} height={32} />
+                                    <Image className="inline w-8 ltr:-ml-1 rtl:-mr-1" src={`/assets/images/logo2.svg`} alt="logo" width={32} height={32} />
                                     <span className="align-middle text-2xl font-semibold transition-all duration-300 ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light">EBOSS</span>
                                 </Link>
                                 {/* Show toggle button only on dashboard pages */}
@@ -244,13 +243,7 @@ const Header = () => {
                                 btnClassName="block p-2 rounded-full bg-white-light/40 dark:bg-dark/40 hover:text-primary hover:bg-white-light/90 dark:hover:bg-dark/60"
                                 button={
                                     i18n.language && (
-                                        <Image
-                                            className="h-5 w-5 rounded-full object-cover"
-                                            src={`${basePath}/assets/images/flags/${i18n.language.toUpperCase()}.svg`}
-                                            alt="flag"
-                                            width={20}
-                                            height={20}
-                                        />
+                                        <Image className="h-5 w-5 rounded-full object-cover" src={`/assets/images/flags/${i18n.language.toUpperCase()}.svg`} alt="flag" width={20} height={20} />
                                     )
                                 }
                             >
@@ -267,7 +260,7 @@ const Header = () => {
                                                     }}
                                                 >
                                                     <Image
-                                                        src={`${basePath}/assets/images/flags/${item.code.toUpperCase()}.svg`}
+                                                        src={`/assets/images/flags/${item.code.toUpperCase()}.svg`}
                                                         alt="flag"
                                                         className="h-5 w-5 rounded-full object-cover"
                                                         width={20}
@@ -314,7 +307,7 @@ const Header = () => {
                                                                     <Image
                                                                         className="h-12 w-12 rounded-full object-cover"
                                                                         alt="profile"
-                                                                        src={`${basePath}/assets/images/${notification.profile}`}
+                                                                        src={`/assets/images/${notification.profile}`}
                                                                         width={48}
                                                                         height={48}
                                                                     />
@@ -369,7 +362,7 @@ const Header = () => {
                                 button={
                                     <Image
                                         className="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100"
-                                        src={data?.personal.file_profile_url || `${basePath}/assets/images/user-profile.jpeg`}
+                                        src={data?.personal.file_profile_url || `/assets/images/user-profile.jpeg`}
                                         alt="userProfile"
                                         width={36}
                                         height={36}
@@ -381,7 +374,7 @@ const Header = () => {
                                         <div className="flex items-center px-4 py-4">
                                             <Image
                                                 className="h-10 w-10 rounded-md object-cover"
-                                                src={data?.personal.file_profile_url || `${basePath}/assets/images/user-profile.jpeg`}
+                                                src={data?.personal.file_profile_url || `/assets/images/user-profile.jpeg`}
                                                 alt="userProfile"
                                                 width={40}
                                                 height={40}

@@ -10,7 +10,6 @@ import IconCaretsDown from '@/components/icon/icon-carets-down';
 import IconMinus from '@/components/icon/icon-minus';
 import { usePathname } from 'next/navigation';
 import { getTranslation } from '@/i18n';
-import { basePath } from '@/lib/basePath';
 import { IconAcademic, IconFinance, IconMarketing, IconRegistration, IconSchoolZone, IconSubject } from '../icon/icon';
 
 const Sidebar = () => {
@@ -36,7 +35,7 @@ const Sidebar = () => {
                 <div className="h-full bg-white dark:bg-black">
                     <div className="flex items-center justify-between px-4 py-3">
                         <Link href="/" className="main-logo flex shrink-0 items-center">
-                            <Image src={`${basePath}/assets/images/logo2.svg`} alt="logo" width={32} height={32} className="ml-[5px] flex-none" priority />
+                            <Image src={`/assets/images/logo2.svg`} alt="logo" width={32} height={32} className="ml-[5px] flex-none" priority />
                             <span className="align-middle text-2xl font-semibold ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light lg:inline">EBOSS</span>
                         </Link>
 
