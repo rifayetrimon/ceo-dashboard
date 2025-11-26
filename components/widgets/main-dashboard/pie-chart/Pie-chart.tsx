@@ -71,7 +71,6 @@ export default function PieChart({
     const chartOptions: any = {
         chart: {
             type: type,
-            // Keep height dynamic, will use CSS to control mobile height
             height: height,
             fontFamily: 'Nunito, sans-serif',
             zoom: {
@@ -90,7 +89,6 @@ export default function PieChart({
             width: type === 'donut' ? 2 : 0,
             colors: [isDark ? '#0e1726' : '#fff'],
         },
-        // Apply custom colors if it's any financial overview chart
         colors: isFinancialOverview ? financialColors : colors || defaultColors,
         legend: {
             position: 'bottom',
@@ -122,17 +120,6 @@ export default function PieChart({
                 highlightDataSeries: true,
             },
         },
-        // ❌ REMOVED overly restrictive mobile width setting
-        // responsive: [
-        //     {
-        //         breakpoint: 480,
-        //         options: {
-        //             chart: {
-        //                 width: 200,
-        //             },
-        //         },
-        //     },
-        // ],
         plotOptions:
             type === 'donut'
                 ? {
@@ -153,12 +140,10 @@ export default function PieChart({
                                       fontWeight: 700,
                                       color: isDark ? '#bfc9d4' : '#111827',
                                       offsetY: 8,
-                                      // On hover, show the value with M/K formatting
                                       formatter: (val: any) => `RM ${formatValue(Number(val))}`,
                                   },
                                   total: {
                                       show: true,
-                                      // 🎯 FIX 1: Display 'Profit' if it's any Financial Overview
                                       label: isFinancialOverview ? 'Profit' : 'Total',
                                       fontSize: '16px',
                                       fontWeight: 600,
@@ -166,14 +151,11 @@ export default function PieChart({
                                       formatter: (w: any) => {
                                           let centerValue: number;
 
-                                          // 🎯 FIX 2: Calculate Profit (Income - Cost) if it's a Financial Overview
                                           if (isFinancialOverview && w.globals.series.length >= 2) {
-                                              // The data is ordered [Income, Cost, Profit]
                                               const income = w.globals.series[0] || 0;
                                               const cost = w.globals.series[1] || 0;
                                               centerValue = income - cost;
                                           } else {
-                                              // Default behavior: sum all series
                                               centerValue = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
                                           }
                                           return `RM ${formatValue(centerValue)}`;
@@ -217,7 +199,8 @@ export default function PieChart({
 
     return (
         <div className="panel h-full">
-            <div className="mb-5 flex items-center justify-between dark:text-white-light">
+            {/* ✅ FIXED: Changed from items-center to items-start for top alignment */}
+            <div className="mb-5 flex items-start justify-between dark:text-white-light">
                 <h5 className="text-lg font-semibold">{title}</h5>
                 <div className="flex items-center gap-3">
                     {showYearFilter && yearOptions.length > 0 && (
@@ -269,7 +252,6 @@ export default function PieChart({
                 </div>
             </div>
             <div>
-                {/* 🎯 RESPONSIVE FIX: Apply max-height for mobile screens to prevent excessive vertical space */}
                 <div className="rounded-lg bg-white dark:bg-black max-h-[300px] sm:max-h-none" style={{ height: isMounted ? 'auto' : height }}>
                     {isMounted ? (
                         <>
@@ -297,20 +279,18 @@ export default function PieChart({
                                     text-overflow: ellipsis !important;
                                     max-width: 150px !important;
                                 }
-                                /* 🎯 RESPONSIVE FIX: Stack legend items vertically on small mobile screens (< 640px) */
                                 @media (max-width: 639px) {
                                     .apexcharts-legend {
                                         padding: 5px 10px 0 10px !important;
                                     }
                                     .apexcharts-legend-series {
-                                        /* Forces items onto new lines */
                                         flex: 0 0 100% !important;
                                         max-width: 100% !important;
                                         justify-content: flex-start !important;
                                         margin: 5px 0 !important;
                                     }
                                     .apexcharts-legend-text {
-                                        max-width: calc(100% - 30px) !important; /* Adjust max-width to fit on one line */
+                                        max-width: calc(100% - 30px) !important;
                                     }
                                 }
                             `}</style>
