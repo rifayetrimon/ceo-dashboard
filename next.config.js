@@ -7,8 +7,4 @@ module.exports = {
     images: {
         domains: ['devsec.awfatech.com'],
     },
-
-    env: {
-        NEXT_PUBLIC_BASE_PATH: '',
-    },
 };
