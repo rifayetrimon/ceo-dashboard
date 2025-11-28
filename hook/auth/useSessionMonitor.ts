@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { isSessionLocked, isLoggedIn, startInactivityMonitoring } from '@/services/auth/authService';
+import { isSessionLocked, isLoggedIn, startInactivityMonitoring, checkInactivity } from '@/services/auth/authService';
 
 export const useSessionMonitor = () => {
     const [locked, setLocked] = useState(false);
@@ -9,8 +9,8 @@ export const useSessionMonitor = () => {
     const pathname = usePathname();
 
     useEffect(() => {
-        // Don't monitor on auth pages
-        const isAuthPage = pathname?.startsWith('/');
+        // Don't monitor on auth pages (except unlock)
+        const isAuthPage = pathname?.startsWith('/auth') && pathname !== '/auth/unlock';
 
         if (isAuthPage) {
             console.log('🔍 SessionMonitor: On auth page, skipping');
@@ -19,8 +19,27 @@ export const useSessionMonitor = () => {
 
         console.log('🔍 SessionMonitor: Starting check for:', pathname);
 
-        // CRITICAL: Check if session is locked FIRST
+        // CRITICAL: Check IMMEDIATELY when component mounts
+        checkInactivity();
+
+        // Check if session is locked AFTER checking inactivity
         const sessionLocked = isSessionLocked();
+        const loggedIn = isLoggedIn();
+
+        console.log('📊 Session Status:', {
+            pathname,
+            loggedIn,
+            sessionLocked,
+            userToken: !!sessionStorage.getItem('userToken'),
+            username: sessionStorage.getItem('username')
+        });
+
+        // If not logged in, redirect to login
+        if (!loggedIn) {
+            console.log('❌ Not logged in, redirecting to login...');
+            router.replace('/auth/login');
+            return;
+        }
 
         // If session is locked and not on unlock page, force redirect
         if (sessionLocked && pathname !== '/auth/unlock') {
@@ -38,33 +57,13 @@ export const useSessionMonitor = () => {
             return;
         }
 
-        // Perform normal check
-        const checkTimeout = setTimeout(() => {
-            const loggedIn = isLoggedIn();
+        console.log('✅ Session is valid, starting monitoring');
+        setLocked(false);
 
-            console.log('📊 Session Status:', {
-                pathname,
-                loggedIn,
-                sessionLocked,
-                userToken: !!sessionStorage.getItem('userToken'),
-                username: sessionStorage.getItem('username')
-            });
-
-            // If not logged in, redirect to login
-            if (!loggedIn) {
-                console.log('❌ Not logged in, redirecting...');
-                router.replace('/auth/login');
-                return;
-            }
-
-            console.log('✅ Session is valid, starting monitoring');
-            setLocked(false);
-
-            // Start monitoring if logged in and not locked
-            if (loggedIn && !sessionLocked) {
-                startInactivityMonitoring();
-            }
-        }, 250);
+        // Start monitoring if logged in and not locked
+        if (loggedIn && !sessionLocked) {
+            startInactivityMonitoring();
+        }
 
         // Listen for lock events
         const handleSessionLocked = () => {
@@ -89,7 +88,6 @@ export const useSessionMonitor = () => {
         window.addEventListener('userLoggedOut', handleUserLoggedOut);
 
         return () => {
-            clearTimeout(checkTimeout);
             window.removeEventListener('sessionLocked', handleSessionLocked);
             window.removeEventListener('sessionUnlocked', handleSessionUnlocked);
             window.removeEventListener('userLoggedOut', handleUserLoggedOut);
