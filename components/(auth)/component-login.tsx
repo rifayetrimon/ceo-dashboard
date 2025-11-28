@@ -29,6 +29,8 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
         e.preventDefault();
         setErrorMessage('');
 
+        console.log('🔐 Attempting login...');
+
         // Save username if Remember Me checked
         if (rememberMe) {
             localStorage.setItem('rememberedUsername', username);
@@ -39,8 +41,21 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
         login(
             { username, password },
             {
-                onSuccess: () => router.push('/'),
-                onError: (err: any) => setErrorMessage(err?.message || 'Login failed'),
+                onSuccess: (data) => {
+                    console.log('✅ Login mutation success:', data);
+                    console.log('📍 Redirecting to home in 200ms...');
+
+                    // Give delay to ensure sessionStorage is written
+                    setTimeout(() => {
+                        console.log('🚀 Executing redirect to /');
+                        router.push('/');
+                    }, 200);
+                },
+                onError: (err: any) => {
+                    console.error('❌ Login error:', err);
+                    const errorMsg = err?.response?.data?.message || err?.message || 'Login failed';
+                    setErrorMessage(errorMsg);
+                },
             },
         );
     };
@@ -59,8 +74,9 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
                         className="form-input ps-10 placeholder:text-white-dark"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        autoComplete="username" // Allow browser autofill
+                        autoComplete="username"
                         required
+                        disabled={isPending}
                     />
                     <span className="absolute start-4 top-1/2 -translate-y-1/2 text-white-dark">
                         <FaUser />
@@ -80,8 +96,9 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
                         className="form-input ps-10 pe-10 placeholder:text-white-dark"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        autoComplete="password" // Allow browser autofill
+                        autoComplete="current-password"
                         required
+                        disabled={isPending}
                     />
                     <span className="absolute start-4 top-1/2 -translate-y-1/2">
                         <IconLockDots fill={true} />
@@ -95,6 +112,7 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
                         onTouchEnd={() => setShowPassword(false)}
                         className="absolute end-4 top-1/2 -translate-y-1/2"
                         tabIndex={-1}
+                        disabled={isPending}
                     >
                         <IconEye />
                     </button>
@@ -104,13 +122,23 @@ const ComponentLogin = ({ setErrorMessage }: { setErrorMessage: (msg: string) =>
             {/* Remember Me */}
             <div>
                 <label className="flex cursor-pointer items-center">
-                    <input type="checkbox" className="form-checkbox bg-white dark:bg-black" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+                    <input
+                        type="checkbox"
+                        className="form-checkbox bg-white dark:bg-black"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        disabled={isPending}
+                    />
                     <span className="text-white-dark ml-2">Remember me</span>
                 </label>
             </div>
 
             {/* Submit Button */}
-            <button type="submit" className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]" disabled={isPending}>
+            <button
+                type="submit"
+                className="btn btn-gradient !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)] disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={isPending}
+            >
                 {isPending ? 'Signing in...' : 'Sign in'}
             </button>
         </form>

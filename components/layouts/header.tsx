@@ -15,7 +15,6 @@ import IconLaptop from '@/components/icon/icon-laptop';
 import IconInfoCircle from '@/components/icon/icon-info-circle';
 import IconBellBing from '@/components/icon/icon-bell-bing';
 import IconUser from '@/components/icon/icon-user';
-import IconMail from '@/components/icon/icon-mail';
 import IconLockDots from '@/components/icon/icon-lock-dots';
 import IconLogout from '@/components/icon/icon-logout';
 import IconMenuDashboard from '@/components/icon/menu/icon-menu-dashboard';
@@ -24,6 +23,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { getTranslation } from '@/i18n';
 import { useProfile } from '@/hook/user/useProfile';
 import { useLogout } from '@/hook/auth/useLogout';
+import { lockSession } from '@/services/auth/authService'; // Import lockSession
 
 const Header = () => {
     const pathname = usePathname();
@@ -32,6 +32,14 @@ const Header = () => {
     const { t, i18n } = getTranslation();
     const { data } = useProfile();
     const logout = useLogout();
+    console.log("profile data", data);
+
+    // Function to handle lock screen
+    const handleLockScreen = () => {
+        console.log('🔒 Manually locking session...');
+        lockSession(); // This will trigger the sessionLocked event
+        router.push('/auth/unlock');
+    };
 
     useEffect(() => {
         const selector = document.querySelector('ul.horizontal-menu a[href="' + window.location.pathname + '"]');
@@ -394,10 +402,14 @@ const Header = () => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/auth/unlock" className="dark:hover:text-white">
+                                        {/* Changed from Link to button to trigger lockSession */}
+                                        <button
+                                            onClick={handleLockScreen}
+                                            className="flex w-full items-center dark:hover:text-white"
+                                        >
                                             <IconLockDots className="h-4.5 w-4.5 shrink-0 ltr:mr-2 rtl:ml-2" />
                                             Lock Screen
-                                        </Link>
+                                        </button>
                                     </li>
                                     <li className="border-t border-white-light dark:border-white-light/10">
                                         <button onClick={logout} className="flex w-full items-center !py-3 text-danger">

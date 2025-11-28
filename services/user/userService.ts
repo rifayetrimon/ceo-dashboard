@@ -2,18 +2,18 @@ import myAxios from '@/lib/myAxios';
 
 export const getUserProfile = async () => {
     if (typeof window === 'undefined') {
-        throw new Error('localStorage not available on server');
+        throw new Error('sessionStorage not available on server');
     }
 
-    const userId = localStorage.getItem('user_id');
-    const encryptedKey = localStorage.getItem('x-encrypted-key');
-    const encryptedUser = localStorage.getItem('encrypted_user');
-    const userToken = localStorage.getItem('userToken');
+    const userId = sessionStorage.getItem('user_id');
+    const encryptedKey = sessionStorage.getItem('x-encrypted-key');
+    const encryptedUser = sessionStorage.getItem('encrypted_user');
+    const userToken = sessionStorage.getItem('userToken');
 
     // console.log(userId);
     // console.log(encryptedKey);
 
-    if (!userId) throw new Error('No user_id found in localStorage');
+    if (!userId) throw new Error('No user_id found in sessionStorage');
     if (!encryptedKey) throw new Error('Encrypted key missing');
 
     const response = await myAxios.post(
