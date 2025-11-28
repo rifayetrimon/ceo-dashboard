@@ -1,11 +1,12 @@
 // services/sales/financeService.ts
 
 // API CONFIGURATION
-const API_BASE_URL = 'https://ec5145c9-7c8e-4a5e-b0de-0e1dd1891859.mock.pstmn.io';
+const API_BASE_URL = 'https://devapi02.awfatech.com/proxy/api/v1/dashboard/summery';
 
 // ============================================================
 // INTERFACE DEFINITIONS
 // ============================================================
+
 
 export interface CategoryData {
     code: string;
@@ -52,12 +53,12 @@ export interface ZoneFinancialSummary {
 // ============================================================
 
 export const dashboardService = {
-    getSystemInfo: async (appCode: string | null = null, dbName: string = ''): Promise<any> => {
+    getSystemInfo: async (appCode: string | 'azzahrawi', databaseName: string | 'azzahrawi_azzahrawi'): Promise<any> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard`, {
+            const response = await fetch(`${API_BASE_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appCode, dbName, payload: 'SYSTEM_INFO' }),
+                body: JSON.stringify({ appCode, databaseName, payload: 'SYSTEM_INFO' }),
             });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return await response.json();
@@ -66,12 +67,12 @@ export const dashboardService = {
             throw error;
         }
     },
-    getDashboardData: async (payload: string, appCode: string | null = null, dbName: string = ''): Promise<any> => {
+    getDashboardData: async (payload: string, appCode: string | 'azzahrawi', databaseName: string | 'azzahrawi_azzahrawi'): Promise<any> => {
         try {
-            const response = await fetch(`${API_BASE_URL}/dashboard`, {
+            const response = await fetch(`${API_BASE_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appCode, dbName, payload }),
+                body: JSON.stringify({ appCode, databaseName, payload }),
             });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return await response.json();
@@ -82,12 +83,12 @@ export const dashboardService = {
     },
 };
 
-export const getFinanceSummary = async (appCode: string | null = null, dbName: string = ''): Promise<FinanceSummaryResponse> => {
+export const getFinanceSummary = async (appCode: string | 'azzahrawi', databaseName: string | 'azzahrawi_azzahrawi'): Promise<FinanceSummaryResponse> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, {
+        const response = await fetch(`${API_BASE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ appCode, dbName, payload: 'FINANCE_SUMMARY' }),
+            body: JSON.stringify({ appCode, databaseName, payload: 'FINANCE_SUMMARY' }),
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data: FinanceSummaryResponse = await response.json();
