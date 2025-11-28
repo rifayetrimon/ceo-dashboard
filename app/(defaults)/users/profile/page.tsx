@@ -14,8 +14,10 @@ import { useProfile } from '@/hook/user/useProfile';
 import Image from 'next/image';
 import PaymentHistory from './_components/payment-history';
 
+
 const Profile = () => {
     const { data } = useProfile();
+
 
     return (
         <div>

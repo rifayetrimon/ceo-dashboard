@@ -1,12 +1,56 @@
-// services/sales/financeService.ts
+import { jwtDecode } from "jwt-decode";
 
+// ============================================================
 // API CONFIGURATION
+// ============================================================
 const API_BASE_URL = 'https://devapi02.awfatech.com/proxy/api/v1/dashboard/summery';
+
+// ============================================================
+// SESSION HELPER (Token Decoding)
+// ============================================================
+
+interface DecodedToken {
+    app_code: string;       // e.g. "awfahq"
+    db_name: string;        // e.g. "devsec_testasis"
+    cust_name?: string;
+    app_name?: string;
+    url?: string;
+    [key: string]: any;
+}
+
+export const getSessionCredentials = () => {
+    if (typeof window === 'undefined') {
+        return { appCode: null, databaseName: null };
+    }
+
+    const encryptedKey = sessionStorage.getItem('x-encrypted-key');
+
+    if (!encryptedKey) {
+        console.warn('⚠️ [SessionHelper] x-encrypted-key missing from session storage');
+        return { appCode: null, databaseName: null };
+    }
+
+    try {
+        const decoded = jwtDecode<DecodedToken>(encryptedKey);
+        const appCode = decoded.app_code;
+        const databaseName = decoded.db_name;
+
+        if (!appCode || !databaseName) {
+            return { appCode: null, databaseName: null };
+        }
+
+        console.log(`✅ [SessionHelper] Credentials Loaded: appCode="${appCode}", dbName="${databaseName}"`);
+        return { appCode, databaseName };
+
+    } catch (e) {
+        console.error("❌ [SessionHelper] Decode Failed", e);
+        return { appCode: null, databaseName: null };
+    }
+};
 
 // ============================================================
 // INTERFACE DEFINITIONS
 // ============================================================
-
 
 export interface CategoryData {
     code: string;
@@ -41,6 +85,7 @@ export interface ChartSeriesData {
     name: string;
     data: number[];
 }
+
 export interface ZoneFinancialSummary {
     zoneName: string;
     totalIncome: number;
@@ -53,8 +98,16 @@ export interface ZoneFinancialSummary {
 // ============================================================
 
 export const dashboardService = {
-    getSystemInfo: async (appCode: string = 'azzahrawi', databaseName: string = 'azzahrawi_azzahrawi'): Promise<any> => {
+
+    getSystemInfo: async (): Promise<any> => {
         try {
+            // Retrieve credentials dynamically
+            const { appCode, databaseName } = getSessionCredentials();
+
+            if (!appCode || !databaseName) {
+                throw new Error("Missing Session Credentials");
+            }
+
             const response = await fetch(`${API_BASE_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -67,8 +120,16 @@ export const dashboardService = {
             throw error;
         }
     },
-    getDashboardData: async (payloadType: string, appCode: string = 'azzahrawi', databaseName: string = 'azzahrawi_azzahrawi'): Promise<any> => {
+
+    getDashboardData: async (payloadType: string): Promise<any> => {
         try {
+            // Retrieve credentials dynamically
+            const { appCode, databaseName } = getSessionCredentials();
+
+            if (!appCode || !databaseName) {
+                throw new Error("Missing Session Credentials");
+            }
+
             const response = await fetch(`${API_BASE_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -83,8 +144,15 @@ export const dashboardService = {
     },
 };
 
-export const getFinanceSummary = async (appCode: string = 'azzahrawi', databaseName: string = 'azzahrawi_azzahrawi'): Promise<FinanceSummaryResponse> => {
+export const getFinanceSummary = async (): Promise<FinanceSummaryResponse> => {
     try {
+        // Retrieve credentials dynamically
+        const { appCode, databaseName } = getSessionCredentials();
+
+        if (!appCode || !databaseName) {
+            throw new Error("Missing Session Credentials");
+        }
+
         const response = await fetch(`${API_BASE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -259,10 +327,6 @@ export const getChartSeriesForYearRange = (
 // 5. COMPANY & CATEGORY BREAKDOWN FUNCTIONS (Pie Charts)
 // ============================================================
 
-/**
- * Calculates company-wide financial totals.
- * FIX: Now returns Income, Cost, and Profit as slices for visualization.
- */
 export const processCompanyFinancialsByYear = (branches: any[], year: string): { totalProfit: number; labels: string[]; series: number[] } => {
     let totalIncome = 0;
     let totalCost = 0;
@@ -285,18 +349,13 @@ export const processCompanyFinancialsByYear = (branches: any[], year: string): {
 
     const totalProfit = totalIncome - totalCost;
 
-    // --- FIX: Return Income, Cost, AND Profit as separate slices ---
-    // We use Math.abs for profit here. The PieChart will use series[0] - series[1] for center text.
     return {
         totalProfit: totalProfit,
-        labels: ['Income', 'Cost', 'Profit'], // Three labels
-        series: [totalIncome, totalCost, Math.abs(totalProfit)], // Three series values
+        labels: ['Income', 'Cost', 'Profit'],
+        series: [totalIncome, totalCost, Math.abs(totalProfit)],
     };
 };
 
-/**
- * Aggregates all branch revenue data by category for a specific year (unchanged).
- */
 export const processCategoryTotalsForYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
     const categoryTotals: Map<string, { name: string; total: number }> = new Map();
 
@@ -325,9 +384,6 @@ export const processCategoryTotalsForYear = (branches: any[], year: string): { l
     return { labels: sortedCategories.map((cat) => cat.name), series: sortedCategories.map((cat) => cat.total) };
 };
 
-/**
- * Aggregates all branch cost data by category for a specific year (unchanged).
- */
 export const processExpenseCategoryTotalsForYear = (branches: any[], year: string): { labels: string[]; series: number[] } => {
     const categoryTotals: Map<string, { name: string; total: number }> = new Map();
 
@@ -357,7 +413,7 @@ export const processExpenseCategoryTotalsForYear = (branches: any[], year: strin
 };
 
 // ============================================================
-// 6. ZONE-SPECIFIC FUNCTIONS (unchanged)
+// 6. ZONE-SPECIFIC FUNCTIONS
 // ============================================================
 
 export const calculateZoneWiseFinancials = (financeBranches: any[], systemBranches: any[], year: number): ZoneFinancialSummary[] => {

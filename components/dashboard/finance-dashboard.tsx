@@ -35,6 +35,7 @@ import {
     getLatestYearsProfitData,
 } from '@/services/sales/financeService';
 
+
 // 💡 FIX 1: Define a type alias to tell the component that the 'cost' data
 // coming from the service should be locally treated as 'expense' for compatibility
 // with the new variable names and display requirements.
