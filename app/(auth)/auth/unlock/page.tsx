@@ -8,7 +8,8 @@ import { useState } from 'react';
 import { useProfile } from '@/hook/user/useProfile';
 import Image from 'next/image';
 import { getSessionData } from '@/services/auth/authService';
-import UnlockGuard from '@/components/guards/unLockGuard';
+import UnlockGuard from '@/components/guards/UnlockGuard';
+
 
 
 const BoxedLockScreen = () => {
