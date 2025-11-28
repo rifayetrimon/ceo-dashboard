@@ -1,64 +1,55 @@
 // components/layouts/AuthLayout.tsx
 'use client';
 
-import LanguageDropdown from '@/components/language-dropdown';
 import { useRouter, usePathname } from 'next/navigation';
 import { FaArrowLeftLong } from 'react-icons/fa6';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface AuthLayoutProps {
     children: React.ReactNode;
-    showBackButton?: boolean; // allow override if needed
-    backToAppCode?: boolean; // true = go to /auth/appcode, false = go back
+    showBackButton?: boolean;
+    backToAppCode?: boolean;
 }
+
+const BACKGROUND_IMAGES = ['/assets/images/auth/bg.avif', '/assets/images/auth/bg2.jpeg', '/assets/images/auth/bg6.jpeg', '/assets/images/auth/img2.png'];
 
 export default function AuthLayout({ children, showBackButton = true, backToAppCode = false }: AuthLayoutProps) {
     const router = useRouter();
     const pathname = usePathname();
 
-    // ❌ Hide back button specifically on /auth/appcode
+    const [currentBg, setCurrentBg] = useState(BACKGROUND_IMAGES[0]);
+
     const shouldShowBackButton = showBackButton && pathname !== '/auth/appcode';
+
+    useEffect(() => {
+        const randomIndex = Math.floor(Math.random() * BACKGROUND_IMAGES.length);
+        setCurrentBg(BACKGROUND_IMAGES[randomIndex]);
+    }, []);
 
     return (
         <div className="relative">
             {/* Background Layer */}
             <div className="absolute inset-0">
-                <Image src={`/assets/images/auth/new-bg1.png`} alt="background" fill sizes="100vw" priority className="h-full w-full object-cover" />
+                <Image src={currentBg} alt="background" fill sizes="100vw" priority className="h-full w-full object-cover transition-opacity duration-500" />
             </div>
 
-            <div
-                className="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-6 py-10 dark:bg-[#060818] sm:px-16"
-                // style={{ backgroundImage: `url(${basePath}/assets/images/auth/map.png)` }}
-            >
-                {/* Decorative Images */}
-                {/* <Image
-                    src={`${basePath}/assets/images/auth/coming-soon-object1.png`}
-                    alt="object1"
-                    width={893}
-                    height={893}
-                    className="absolute left-0 top-1/2 h-full max-h-[893px] -translate-y-1/2"
-                />
-                <Image src={`${basePath}/assets/images/auth/coming-soon-object2.png`} alt="object2" width={160} height={160} className="absolute left-24 top-0 h-40 md:left-[30%]" />
-                <Image src={`${basePath}/assets/images/auth/coming-soon-object3.png`} alt="object3" width={300} height={300} className="absolute right-0 top-0 h-[300px]" />
-                <Image src={`${basePath}/assets/images/auth/polygon-object.svg`} alt="polygon" width={100} height={100} className="absolute bottom-0 end-[28%]" /> */}
-
+            <div className="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat px-6 py-10 dark:bg-[#060818] sm:px-16">
                 {/* Main Card */}
                 <div className="relative w-full max-w-[870px] rounded-md bg-[linear-gradient(45deg,#fff9f9_0%,rgba(255,255,255,0)_25%,rgba(255,255,255,0)_75%,_#fff9f9_100%)] p-2 dark:bg-[linear-gradient(52.22deg,#0E1726_0%,rgba(14,23,38,0)_18.66%,rgba(14,23,38,0)_51.04%,rgba(14,23,38,0)_80.07%,#0E1726_100%)]">
                     <div className="relative flex flex-col justify-center rounded-md bg-white/60 px-6 py-20 backdrop-blur-lg dark:bg-black/50 lg:min-h-[758px]">
-                        {/* Top Bar */}
+                        {/* Top Bar (Back Button) */}
                         <div className="absolute top-6 left-6 right-6 flex items-center">
-                            {/* Left: Back Button */}
                             {shouldShowBackButton && (
                                 <button type="button" onClick={() => (backToAppCode ? router.push('/auth/appcode') : router.back())} className="text-white hover:text-gray-300">
                                     <FaArrowLeftLong className="text-xl text-white-dark" />
                                 </button>
                             )}
+                        </div>
 
-                            {/* Right: Language Dropdown */}
-                            {/* <div className="ml-auto">
-                                <LanguageDropdown />
-                            </div> */}
+                        {/* Title Section */}
+                        <div className="mx-auto text-center w-full max-w-[440px]">
+                            <h1 className="text-2xl font-extrabold uppercase tracking-widest text-primary md:text-4xl">CEO DASHBOARD</h1>
                         </div>
 
                         {/* Page Content */}

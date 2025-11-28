@@ -123,48 +123,48 @@ export default function PieChart({
         plotOptions:
             type === 'donut'
                 ? {
-                      pie: {
-                          donut: {
-                              size: '80%',
-                              labels: {
-                                  show: true,
-                                  name: {
-                                      show: true,
-                                      fontSize: '16px',
-                                      fontWeight: 600,
-                                      offsetY: -8,
-                                  },
-                                  value: {
-                                      show: true,
-                                      fontSize: '18px',
-                                      fontWeight: 700,
-                                      color: isDark ? '#bfc9d4' : '#111827',
-                                      offsetY: 8,
-                                      formatter: (val: any) => `RM ${formatValue(Number(val))}`,
-                                  },
-                                  total: {
-                                      show: true,
-                                      label: isFinancialOverview ? 'Profit' : 'Total',
-                                      fontSize: '16px',
-                                      fontWeight: 600,
-                                      color: isDark ? '#bfc9d4' : '#111827',
-                                      formatter: (w: any) => {
-                                          let centerValue: number;
+                    pie: {
+                        donut: {
+                            size: '80%',
+                            labels: {
+                                show: true,
+                                name: {
+                                    show: true,
+                                    fontSize: '16px',
+                                    fontWeight: 600,
+                                    offsetY: -8,
+                                },
+                                value: {
+                                    show: true,
+                                    fontSize: '18px',
+                                    fontWeight: 700,
+                                    color: isDark ? '#bfc9d4' : '#111827',
+                                    offsetY: 8,
+                                    formatter: (val: any) => `RM ${formatValue(Number(val))}`,
+                                },
+                                total: {
+                                    show: true,
+                                    label: isFinancialOverview ? 'Profit' : 'Total',
+                                    fontSize: '16px',
+                                    fontWeight: 600,
+                                    color: isDark ? '#bfc9d4' : '#111827',
+                                    formatter: (w: any) => {
+                                        let centerValue: number;
 
-                                          if (isFinancialOverview && w.globals.series.length >= 2) {
-                                              const income = w.globals.series[0] || 0;
-                                              const cost = w.globals.series[1] || 0;
-                                              centerValue = income - cost;
-                                          } else {
-                                              centerValue = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
-                                          }
-                                          return `RM ${formatValue(centerValue)}`;
-                                      },
-                                  },
-                              },
-                          },
-                      },
-                  }
+                                        if (isFinancialOverview && w.globals.series.length >= 2) {
+                                            const income = w.globals.series[0] || 0;
+                                            const cost = w.globals.series[1] || 0;
+                                            centerValue = income - cost;
+                                        } else {
+                                            centerValue = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
+                                        }
+                                        return `RM ${formatValue(centerValue)}`;
+                                    },
+                                },
+                            },
+                        },
+                    },
+                }
                 : {},
         states: {
             hover: {
@@ -198,7 +198,7 @@ export default function PieChart({
     };
 
     return (
-        <div className="panel h-full">
+        <div className="panel">
             {/* ✅ FIXED: Changed from items-center to items-start for top alignment */}
             <div className="mb-5 flex items-start justify-between dark:text-white-light">
                 <h5 className="text-lg font-semibold">{title}</h5>
@@ -252,7 +252,7 @@ export default function PieChart({
                 </div>
             </div>
             <div>
-                <div className="rounded-lg bg-white dark:bg-black max-h-[300px] sm:max-h-none" style={{ height: isMounted ? 'auto' : height }}>
+                <div className="rounded-lg bg-white dark:bg-black" style={{ height: isMounted ? 'auto' : height }}>
                     {isMounted ? (
                         <>
                             <ReactApexChart series={series} options={chartOptions} type={type} height={height} width={'100%'} />

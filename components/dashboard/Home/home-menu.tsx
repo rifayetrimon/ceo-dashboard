@@ -51,8 +51,8 @@ export default function HomeMenu() {
     return (
         // Added a subtle background color to the main container for contrast (e.g., bg-gray-50)
         // You can apply this background to your main page layout component instead of here.
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
                 {menuItems.map((item) => {
                     const IconComponent = item.icon;
 
@@ -61,9 +61,9 @@ export default function HomeMenu() {
                             <div
                                 // Card Styling:
                                 // Pure white background, slightly larger rounded corners (lg), more defined shadow
-                                className={`bg-white rounded-xl shadow-lg p-8 
-                                    flex flex-col items-center justify-center text-center space-y-4 cursor-pointer 
-                                    min-h-[180px] // Ensure consistent card height
+                                className={`bg-white rounded-xl shadow-lg p-4 md:p-8 
+                                    flex flex-col items-center justify-center text-center space-y-2 md:space-y-4 cursor-pointer 
+                                    min-h-[140px] md:min-h-[180px] // Ensure consistent card height
                                     transform transition-all duration-300 ease-in-out 
                                     
                                     // Hover Effects: Lift, stronger shadow, and primary color border
@@ -71,16 +71,16 @@ export default function HomeMenu() {
                                     group-hover:border-b-4 group-hover:border-indigo-500`} // Adding an accented bottom border
                             >
                                 {/* Icon Container: Two-tone effect for visual interest */}
-                                <div className={`p-4 rounded-full ${item.iconBg} transition-all duration-300 group-hover:shadow-md`}>
+                                <div className={`p-3 md:p-4 rounded-full ${item.iconBg} transition-all duration-300 group-hover:shadow-md`}>
                                     <IconComponent
                                         // Icon Styling: Use the defined brand color
-                                        className={`w-8 h-8 ${brandColor} transition-colors duration-300`}
+                                        className={`w-6 h-6 md:w-8 md:h-8 ${brandColor} transition-colors duration-300`}
                                     />
                                 </div>
 
                                 {/* Title Styling: Dark text, strong on hover */}
                                 <p
-                                    className={`text-xl font-bold text-gray-800 transition-colors duration-300 
+                                    className={`text-base md:text-xl font-bold text-gray-800 transition-colors duration-300 
                                     group-hover:text-indigo-600`} // Use the primary brand color on hover
                                 >
                                     {item.title}

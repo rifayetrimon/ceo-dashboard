@@ -32,8 +32,8 @@ export default function LoginPage() {
                 </div>
 
                 {/* Title */}
-                <div className="mb-10">
-                    <h1 className="text-left text-3xl font-extrabold uppercase !leading-snug text-primary md:text-4xl">Sign in</h1>
+                <div className="mb-8">
+                    <h1 className="mb-1 text-2xl font-bold !leading-snug text-primary">Sign in</h1>
                     <p className="text-left text-base font-bold leading-normal text-white-dark">Enter your username and password to login</p>
                 </div>
 

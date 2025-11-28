@@ -3,7 +3,11 @@ import IconLockDots from '@/components/icon/icon-lock-dots';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
-const ComponentsAuthUnlockForm = () => {
+interface Props {
+    onError?: (msg: string) => void;
+}
+
+const ComponentsAuthUnlockForm = ({ onError }: Props) => {
     const router = useRouter();
 
     const submitForm = (e: any) => {

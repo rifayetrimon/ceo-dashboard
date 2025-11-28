@@ -23,7 +23,7 @@ export default function AppCodePage() {
                 </div>
 
                 <div className="mb-7">
-                    <h1 className="mb-3 text-2xl font-bold !leading-snug dark:text-white">App Code</h1>
+                    <h1 className="mb-3 text-2xl font-bold !leading-snug text-primary">App Code</h1>
                     <p>Enter your app code to access the system</p>
                 </div>
 
