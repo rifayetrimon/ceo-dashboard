@@ -53,12 +53,12 @@ export interface ZoneFinancialSummary {
 // ============================================================
 
 export const dashboardService = {
-    getSystemInfo: async (appCode: string | 'azzahrawi', databaseName: string | 'azzahrawi_azzahrawi'): Promise<any> => {
+    getSystemInfo: async (appCode: string = 'azzahrawi', databaseName: string = 'azzahrawi_azzahrawi'): Promise<any> => {
         try {
             const response = await fetch(`${API_BASE_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appCode, databaseName, payload: 'SYSTEM_INFO' }),
+                body: JSON.stringify({ appCode, databaseName, payloadType: 'SYSTEM_INFO' }),
             });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return await response.json();
@@ -67,28 +67,28 @@ export const dashboardService = {
             throw error;
         }
     },
-    getDashboardData: async (payload: string, appCode: string | 'azzahrawi', databaseName: string | 'azzahrawi_azzahrawi'): Promise<any> => {
+    getDashboardData: async (payloadType: string, appCode: string = 'azzahrawi', databaseName: string = 'azzahrawi_azzahrawi'): Promise<any> => {
         try {
             const response = await fetch(`${API_BASE_URL}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appCode, databaseName, payload }),
+                body: JSON.stringify({ appCode, databaseName, payloadType }),
             });
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             return await response.json();
         } catch (error) {
-            console.error(`Error fetching dashboard data (${payload}):`, error);
+            console.error(`Error fetching dashboard data (${payloadType}):`, error);
             throw error;
         }
     },
 };
 
-export const getFinanceSummary = async (appCode: string | 'azzahrawi', databaseName: string | 'azzahrawi_azzahrawi'): Promise<FinanceSummaryResponse> => {
+export const getFinanceSummary = async (appCode: string = 'azzahrawi', databaseName: string = 'azzahrawi_azzahrawi'): Promise<FinanceSummaryResponse> => {
     try {
         const response = await fetch(`${API_BASE_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ appCode, databaseName, payload: 'FINANCE_SUMMARY' }),
+            body: JSON.stringify({ appCode, databaseName, payloadType: 'FINANCE_SUMMARY' }),
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data: FinanceSummaryResponse = await response.json();
