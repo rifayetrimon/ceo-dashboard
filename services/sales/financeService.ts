@@ -10,43 +10,43 @@ const API_BASE_URL = 'https://devapi02.awfatech.com/proxy/api/v1/dashboard/summe
 // ============================================================
 
 interface DecodedToken {
-    app_code: string;       // e.g. "awfahq"
-    db_name: string;        // e.g. "devsec_testasis"
+    app_code: string;
+    db_name: string;
     cust_name?: string;
     app_name?: string;
     url?: string;
     [key: string]: any;
 }
 
-export const getSessionCredentials = () => {
-    if (typeof window === 'undefined') {
-        return { appCode: null, databaseName: null };
-    }
+// export const getSessionCredentials = () => {
+//     if (typeof window === 'undefined') {
+//         return { appCode: null, databaseName: null };
+//     }
 
-    const encryptedKey = sessionStorage.getItem('x-encrypted-key');
+//     const encryptedKey = sessionStorage.getItem('x-encrypted-key');
 
-    if (!encryptedKey) {
-        console.warn('⚠️ [SessionHelper] x-encrypted-key missing from session storage');
-        return { appCode: null, databaseName: null };
-    }
+//     if (!encryptedKey) {
+//         console.warn('⚠️ [SessionHelper] x-encrypted-key missing from session storage');
+//         return { appCode: null, databaseName: null };
+//     }
 
-    try {
-        const decoded = jwtDecode<DecodedToken>(encryptedKey);
-        const appCode = decoded.app_code;
-        const databaseName = decoded.db_name;
+//     try {
+//         const decoded = jwtDecode<DecodedToken>(encryptedKey);
+//         const appCode = decoded.app_code;
+//         const databaseName = decoded.db_name;
 
-        if (!appCode || !databaseName) {
-            return { appCode: null, databaseName: null };
-        }
+//         if (!appCode || !databaseName) {
+//             return { appCode: null, databaseName: null };
+//         }
 
-        console.log(`✅ [SessionHelper] Credentials Loaded: appCode="${appCode}", dbName="${databaseName}"`);
-        return { appCode, databaseName };
+//         console.log(`✅ [SessionHelper] Credentials Loaded: appCode="${appCode}", dbName="${databaseName}"`);
+//         return { appCode, databaseName };
 
-    } catch (e) {
-        console.error("❌ [SessionHelper] Decode Failed", e);
-        return { appCode: null, databaseName: null };
-    }
-};
+//     } catch (e) {
+//         console.error("❌ [SessionHelper] Decode Failed", e);
+//         return { appCode: null, databaseName: null };
+//     }
+// };
 
 // ============================================================
 // INTERFACE DEFINITIONS
@@ -97,12 +97,85 @@ export interface ZoneFinancialSummary {
 // 1. GENERIC & DASHBOARD SERVICE FUNCTIONS
 // ============================================================
 
+// export const dashboardService = {
+
+//     getSystemInfo: async (): Promise<any> => {
+//         try {
+//             // Retrieve credentials dynamically
+//             const { appCode, databaseName } = getSessionCredentials();
+
+//             if (!appCode || !databaseName) {
+//                 throw new Error("Missing Session Credentials");
+//             }
+
+//             const response = await fetch(`${API_BASE_URL}`, {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ appCode, databaseName, payloadType: 'SYSTEM_INFO' }),
+//             });
+//             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+//             return await response.json();
+//         } catch (error) {
+//             console.error('Error fetching system info:', error);
+//             throw error;
+//         }
+//     },
+
+//     getDashboardData: async (payloadType: string): Promise<any> => {
+//         try {
+//             // Retrieve credentials dynamically
+//             const { appCode, databaseName } = getSessionCredentials();
+
+//             if (!appCode || !databaseName) {
+//                 throw new Error("Missing Session Credentials");
+//             }
+
+//             const response = await fetch(`${API_BASE_URL}`, {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({ appCode, databaseName, payloadType }),
+//             });
+//             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+//             return await response.json();
+//         } catch (error) {
+//             console.error(`Error fetching dashboard data (${payloadType}):`, error);
+//             throw error;
+//         }
+//     },
+// };
+
+// export const getFinanceSummary = async (): Promise<FinanceSummaryResponse> => {
+//     try {
+//         // Retrieve credentials dynamically
+//         const { appCode, databaseName } = getSessionCredentials();
+
+//         if (!appCode || !databaseName) {
+//             throw new Error("Missing Session Credentials");
+//         }
+
+//         const response = await fetch(`${API_BASE_URL}`, {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ appCode, databaseName, payloadType: 'FINANCE_SUMMARY' }),
+//         });
+//         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+//         const data: FinanceSummaryResponse = await response.json();
+//         return data;
+//     } catch (error) {
+//         console.error('Error fetching finance summary:', error);
+//         throw error;
+//     }
+// };
+
+
+
 export const dashboardService = {
 
     getSystemInfo: async (): Promise<any> => {
         try {
             // Retrieve credentials dynamically
-            const { appCode, databaseName } = getSessionCredentials();
+            const appCode = 'azzahrawi';
+            const databaseName = 'azzahrawi_azzahrawi';
 
             if (!appCode || !databaseName) {
                 throw new Error("Missing Session Credentials");
@@ -124,7 +197,8 @@ export const dashboardService = {
     getDashboardData: async (payloadType: string): Promise<any> => {
         try {
             // Retrieve credentials dynamically
-            const { appCode, databaseName } = getSessionCredentials();
+            const appCode = 'azzahrawi';
+            const databaseName = 'azzahrawi_azzahrawi';
 
             if (!appCode || !databaseName) {
                 throw new Error("Missing Session Credentials");
@@ -147,7 +221,8 @@ export const dashboardService = {
 export const getFinanceSummary = async (): Promise<FinanceSummaryResponse> => {
     try {
         // Retrieve credentials dynamically
-        const { appCode, databaseName } = getSessionCredentials();
+        const appCode = 'azzahrawi';
+        const databaseName = 'azzahrawi_azzahrawi';
 
         if (!appCode || !databaseName) {
             throw new Error("Missing Session Credentials");
@@ -166,6 +241,9 @@ export const getFinanceSummary = async (): Promise<FinanceSummaryResponse> => {
         throw error;
     }
 };
+
+
+
 
 // ============================================================
 // 2. CORE DATA PROCESSING FUNCTIONS

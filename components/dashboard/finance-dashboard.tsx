@@ -63,60 +63,229 @@ const getAvailableYears = (branches: any[]): string[] => {
     return Array.from(years).sort((a, b) => b.localeCompare(a));
 };
 
+// const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[], year: number) => {
+//     const zoneMap = new Map<string, { months: number[]; total: number; color: string; zoneName: string }>();
+//     const colors = ['blue', 'purple', 'orange', 'green', 'red', 'cyan', 'pink', 'yellow'];
+//     let colorIndex = 0;
+//     systemBranches.forEach((sysBranch: any) => {
+//         const zoneCode = sysBranch.zone?.trim();
+//         const zoneName = sysBranch.zoneName?.trim();
+//         if (!zoneCode || !zoneName) return;
+//         if (!zoneMap.has(zoneCode)) {
+//             zoneMap.set(zoneCode, { months: new Array(12).fill(0), total: 0, color: colors[colorIndex % colors.length], zoneName: zoneName });
+//             colorIndex++;
+//         }
+//     });
+//     branches.forEach((branch: any) => {
+//         const sysBranch = systemBranches.find((sb: any) => sb._id === branch.branch_id);
+//         if (!sysBranch?.zone) return;
+//         const zoneCode = sysBranch.zone.trim();
+//         const zoneData = zoneMap.get(zoneCode);
+//         if (!zoneData) return;
+//         const yearRevenue = branch.monthly_revenue?.find((y: any) => y.year === year);
+//         if (yearRevenue) {
+//             yearRevenue.records.forEach((record: any) => {
+//                 const monthIndex = record.month - 1;
+//                 if (monthIndex >= 0 && monthIndex < 12) {
+//                     zoneData.months[monthIndex] += record.total || 0;
+//                 }
+//             });
+//         }
+//     });
+//     const tableData: TableRow[] = [];
+//     const monthTotals = new Array(8).fill(0);
+//     zoneMap.forEach((data, zoneCode) => {
+//         const rowTotal = data.months.slice(0, 7).reduce((sum, val) => sum + val, 0);
+//         data.total = rowTotal;
+//         const row: TableRow = {
+//             zone: data.zoneName,
+//             zoneCode: zoneCode,
+//             monthLabel: '',
+//             january: data.months[0] > 0 ? `RM ${data.months[0].toLocaleString()}` : null,
+//             february: data.months[1] > 0 ? `RM ${data.months[1].toLocaleString()}` : null,
+//             march: data.months[2] > 0 ? `RM ${data.months[2].toLocaleString()}` : null,
+//             april: data.months[3] > 0 ? `RM ${data.months[3].toLocaleString()}` : null,
+//             may: data.months[4] > 0 ? `RM ${data.months[4].toLocaleString()}` : null,
+//             june: data.months[5] > 0 ? `RM ${data.months[5].toLocaleString()}` : null,
+//             july: data.months[6] > 0 ? `RM ${data.months[6].toLocaleString()}` : null,
+//             total: `RM ${rowTotal.toLocaleString()}`,
+//             color: data.color,
+//         };
+//         tableData.push(row);
+//         for (let i = 0; i < 7; i++) {
+//             monthTotals[i] += data.months[i];
+//         }
+//         monthTotals[7] += rowTotal;
+//     });
+//     const totalsRow: TableRow = {
+//         zone: 'Total',
+//         monthLabel: '',
+//         january: `RM ${monthTotals[0].toLocaleString()}`,
+//         february: `RM ${monthTotals[1].toLocaleString()}`,
+//         march: `RM ${monthTotals[2].toLocaleString()}`,
+//         april: `RM ${monthTotals[3].toLocaleString()}`,
+//         may: `RM ${monthTotals[4].toLocaleString()}`,
+//         june: `RM ${monthTotals[5].toLocaleString()}`,
+//         july: `RM ${monthTotals[6].toLocaleString()}`,
+//         total: `RM ${monthTotals[7].toLocaleString()}`,
+//     };
+//     return { tableData, totalsRow };
+// };
+
 const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[], year: number) => {
-    const zoneMap = new Map<string, { months: number[]; total: number; color: string; zoneName: string }>();
+    const zoneMap = new Map<string, { months: number[]; total: number; color: string; zoneName: string; zoneCode: string }>();
     const colors = ['blue', 'purple', 'orange', 'green', 'red', 'cyan', 'pink', 'yellow'];
     let colorIndex = 0;
+
+    // 🔍 DEBUG: Log input data to see what we're working with
+    console.log('=== OUTSTANDING AMOUNT CALCULATION DEBUG ===');
+    console.log('Year:', year);
+    console.log('System Branches for Outstanding:', systemBranches.map(sb => ({
+        branchId: sb.branchId,
+        zone: sb.zone,
+        zoneName: sb.zoneName,
+        name: sb.name
+    })));
+
+    console.log('Finance Branches for Outstanding:', branches.map(b => ({
+        branchId: b.branchId,
+        name: b.name,
+        hasRevenue: !!b.monthly_revenue
+    })));
+
+    // ✅ STEP 1: Initialize ALL zones from systemBranches FIRST
     systemBranches.forEach((sysBranch: any) => {
         const zoneCode = sysBranch.zone?.trim();
-        const zoneName = sysBranch.zoneName?.trim();
-        if (!zoneCode || !zoneName) return;
+
+        // ✅ If zoneName is missing or empty, use zone code as fallback
+        const zoneName = sysBranch.zoneName?.trim() || zoneCode || 'Unknown Zone';
+
+        if (!zoneCode) {
+            console.warn('⚠️ System branch missing zone code:', {
+                branchId: sysBranch.branchId,
+                name: sysBranch.name
+            });
+            return;
+        }
+
         if (!zoneMap.has(zoneCode)) {
-            zoneMap.set(zoneCode, { months: new Array(12).fill(0), total: 0, color: colors[colorIndex % colors.length], zoneName: zoneName });
+            zoneMap.set(zoneCode, {
+                months: new Array(12).fill(0),
+                total: 0,
+                color: colors[colorIndex % colors.length],
+                zoneName: zoneName, // Display name (zoneName or zone code)
+                zoneCode: zoneCode  // ✅ NEW: Store original zone code for reference
+            });
             colorIndex++;
+            console.log(`✅ Initialized zone: "${zoneName}" (${zoneCode})`);
         }
     });
-    branches.forEach((branch: any) => {
-        const sysBranch = systemBranches.find((sb: any) => sb._id === branch.branch_id);
-        if (!sysBranch?.zone) return;
-        const zoneCode = sysBranch.zone.trim();
-        const zoneData = zoneMap.get(zoneCode);
-        if (!zoneData) return;
-        const yearRevenue = branch.monthly_revenue?.find((y: any) => y.year === year);
-        if (yearRevenue) {
-            yearRevenue.records.forEach((record: any) => {
-                const monthIndex = record.month - 1;
-                if (monthIndex >= 0 && monthIndex < 12) {
-                    zoneData.months[monthIndex] += record.total || 0;
-                }
+
+    console.log(`📋 Total zones initialized: ${zoneMap.size}`);
+    console.log('Zones:', Array.from(zoneMap.entries()).map(([code, data]) => `${data.zoneName} (${code})`));
+
+    // ✅ STEP 2: Build a lookup map for quick branch-to-zone matching
+    const branchToZoneMap = new Map<number, { zone: string; zoneName: string }>();
+    systemBranches.forEach((sysBranch: any) => {
+        if (sysBranch.branchId && sysBranch.zone?.trim()) {
+            const zoneCode = sysBranch.zone.trim();
+            const zoneName = sysBranch.zoneName?.trim() || zoneCode;
+
+            branchToZoneMap.set(sysBranch.branchId, {
+                zone: zoneCode,
+                zoneName: zoneName
             });
         }
     });
+
+    console.log('Branch to Zone Map:', Array.from(branchToZoneMap.entries()));
+
+    // ✅ STEP 3: Populate revenue data for zones
+    let matchedBranches = 0;
+    let unmatchedBranches = 0;
+
+    branches.forEach((branch: any) => {
+        const zoneInfo = branchToZoneMap.get(branch.branchId);
+
+        if (!zoneInfo) {
+            console.warn(`⚠️ No zone mapping for branch:`, {
+                branchId: branch.branchId,
+                name: branch.name
+            });
+            unmatchedBranches++;
+            return;
+        }
+
+        matchedBranches++;
+        const zoneCode = zoneInfo.zone;
+        const zoneData = zoneMap.get(zoneCode);
+
+        if (!zoneData) {
+            console.warn(`⚠️ Zone data not found for code: ${zoneCode}`);
+            return;
+        }
+
+        const yearRevenue = branch.monthly_revenue?.find((y: any) => y.year === year);
+
+        if (yearRevenue && yearRevenue.records) {
+            console.log(`💰 Processing revenue for ${branch.name} (${zoneInfo.zoneName})`);
+
+            yearRevenue.records.forEach((record: any) => {
+                const monthIndex = record.month - 1;
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    const amount = record.total || 0;
+                    zoneData.months[monthIndex] += amount;
+
+                    if (amount > 0) {
+                        console.log(`  ✓ Month ${record.month}: +RM ${amount.toLocaleString()}`);
+                    }
+                }
+            });
+        } else {
+            console.log(`  ℹ️ No revenue data for ${branch.name} in year ${year}`);
+        }
+    });
+
+    console.log(`✅ Matched ${matchedBranches} branches, ${unmatchedBranches} unmatched`);
+
+    // ✅ STEP 4: Build table rows from ALL zones
     const tableData: TableRow[] = [];
     const monthTotals = new Array(8).fill(0);
-    zoneMap.forEach((data, zoneCode) => {
+
+    // Sort zones alphabetically by zoneName
+    const sortedZones = Array.from(zoneMap.entries()).sort((a, b) =>
+        a[1].zoneName.localeCompare(b[1].zoneName)
+    );
+
+    sortedZones.forEach(([zoneCode, data]) => {
         const rowTotal = data.months.slice(0, 7).reduce((sum, val) => sum + val, 0);
         data.total = rowTotal;
+
         const row: TableRow = {
-            zone: data.zoneName,
-            zoneCode: zoneCode,
+            zone: data.zoneName, // Display name (will show zoneName or zone code as fallback)
+            zoneCode: zoneCode,  // Original zone code stored here
             monthLabel: '',
-            january: data.months[0] > 0 ? `RM ${data.months[0].toLocaleString()}` : null,
-            february: data.months[1] > 0 ? `RM ${data.months[1].toLocaleString()}` : null,
-            march: data.months[2] > 0 ? `RM ${data.months[2].toLocaleString()}` : null,
-            april: data.months[3] > 0 ? `RM ${data.months[3].toLocaleString()}` : null,
-            may: data.months[4] > 0 ? `RM ${data.months[4].toLocaleString()}` : null,
-            june: data.months[5] > 0 ? `RM ${data.months[5].toLocaleString()}` : null,
-            july: data.months[6] > 0 ? `RM ${data.months[6].toLocaleString()}` : null,
+            january: `RM ${data.months[0].toLocaleString()}`,
+            february: `RM ${data.months[1].toLocaleString()}`,
+            march: `RM ${data.months[2].toLocaleString()}`,
+            april: `RM ${data.months[3].toLocaleString()}`,
+            may: `RM ${data.months[4].toLocaleString()}`,
+            june: `RM ${data.months[5].toLocaleString()}`,
+            july: `RM ${data.months[6].toLocaleString()}`,
             total: `RM ${rowTotal.toLocaleString()}`,
             color: data.color,
         };
+
         tableData.push(row);
+
         for (let i = 0; i < 7; i++) {
             monthTotals[i] += data.months[i];
         }
         monthTotals[7] += rowTotal;
+
+        console.log(`📊 Row created: ${data.zoneName} - Total: RM ${rowTotal.toLocaleString()}`);
     });
+
     const totalsRow: TableRow = {
         zone: 'Total',
         monthLabel: '',
@@ -129,8 +298,13 @@ const calculateOutstandingAmountsByZone = (branches: any[], systemBranches: any[
         july: `RM ${monthTotals[6].toLocaleString()}`,
         total: `RM ${monthTotals[7].toLocaleString()}`,
     };
+
+    console.log(`✅ FINAL: ${tableData.length} zones in table`);
+    console.log('=== END DEBUG ===\n');
+
     return { tableData, totalsRow };
 };
+
 
 // ============================================================
 // ICON COMPONENTS (unchanged)
@@ -545,11 +719,36 @@ export default function FinanceDashboard() {
     function handleTableDelete(): void {
         console.log('Table delete action');
     }
+    // const handleZoneClick = (row: TableRow, columnKey: string) => {
+    //     if (columnKey === 'zone') {
+    //         const zoneName = row.zone as string;
+    //         const zoneSlug = zoneName.toLowerCase().replace(/\s+/g, '-');
+    //         router.push(`/dashboard/zone/${encodeURIComponent(zoneSlug)}?name=${encodeURIComponent(zoneName)}`);
+    //     }
+    // };
     const handleZoneClick = (row: TableRow, columnKey: string) => {
         if (columnKey === 'zone') {
             const zoneName = row.zone as string;
-            const zoneSlug = zoneName.toLowerCase().replace(/\s+/g, '-');
-            router.push(`/dashboard/zone/${encodeURIComponent(zoneSlug)}?name=${encodeURIComponent(zoneName)}`);
+            const zoneCode = row.zoneCode as string;
+
+            // ✅ FIX: Find the actual system branch to check if zoneName exists
+            const systemBranch = dashboardMetrics?.systemBranches?.find(
+                (sb: any) => sb.zone?.trim() === zoneCode?.trim()
+            );
+
+            // ✅ CONDITION: If zoneName exists in database, use it. Otherwise use zone code
+            const hasZoneName = systemBranch?.zoneName && systemBranch.zoneName.trim() !== '';
+            const navigationValue = hasZoneName ? systemBranch.zoneName : zoneCode;
+
+            console.log('🔗 Zone click navigation:', {
+                displayName: zoneName,
+                zoneCode: zoneCode,
+                hasZoneName: hasZoneName,
+                navigationValue: navigationValue
+            });
+
+            const zoneSlug = navigationValue.toLowerCase().replace(/\s+/g, '-');
+            router.push(`/dashboard/zone/${encodeURIComponent(zoneSlug)}?name=${encodeURIComponent(navigationValue)}`);
         }
     };
 
