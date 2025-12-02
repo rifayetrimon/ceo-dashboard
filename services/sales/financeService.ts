@@ -1,9 +1,11 @@
-import { jwtDecode } from "jwt-decode";
+'use client';
+import { jwtDecode } from 'jwt-decode';
 
 // ============================================================
 // API CONFIGURATION
 // ============================================================
-const API_BASE_URL = 'https://devapi02.awfatech.com/proxy/api/v1/dashboard/summery';
+const API_BASE_URL = 'https://devapi02.awfatech.com/proxy/api/v1/dashboard/summary';
+const API_OUTSTANDING_AMOUNT_URL = 'https://devapi02.awfatech.com/proxy/api/v1/dashboard/summary/mock';
 
 // ============================================================
 // SESSION HELPER (Token Decoding)
@@ -17,6 +19,8 @@ interface DecodedToken {
     url?: string;
     [key: string]: any;
 }
+
+///////////////////////////// For the user based finance reports
 
 // export const getSessionCredentials = () => {
 //     if (typeof window === 'undefined') {
@@ -51,6 +55,28 @@ interface DecodedToken {
 // ============================================================
 // INTERFACE DEFINITIONS
 // ============================================================
+
+// ✅ Local interface for Table Data (detached from UI component imports)
+export interface FinanceDataRow {
+    [key: string]: string | number | null | undefined;
+    zone: string;
+    zoneCode?: string;
+    color?: string;
+    // Keys matching the 'month_' prefix for the slider logic
+    month_january: string | number;
+    month_february: string | number;
+    month_march: string | number;
+    month_april: string | number;
+    month_may: string | number;
+    month_june: string | number;
+    month_july: string | number;
+    month_august: string | number;
+    month_september: string | number;
+    month_october: string | number;
+    month_november: string | number;
+    month_december: string | number;
+    total: string | number;
+}
 
 export interface CategoryData {
     code: string;
@@ -91,6 +117,15 @@ export interface ZoneFinancialSummary {
     totalIncome: number;
     totalExpense: number;
     totalProfit: number;
+}
+
+export interface FinanceOutstandingAmountResponse {
+    success: boolean;
+    message: string;
+    data: {
+        outstandingAmount: number;
+        branches: any[];
+    };
 }
 
 // ============================================================
@@ -167,10 +202,7 @@ export interface ZoneFinancialSummary {
 //     }
 // };
 
-
-
 export const dashboardService = {
-
     getSystemInfo: async (): Promise<any> => {
         try {
             // Retrieve credentials dynamically
@@ -178,7 +210,7 @@ export const dashboardService = {
             const databaseName = 'azzahrawi_azzahrawi';
 
             if (!appCode || !databaseName) {
-                throw new Error("Missing Session Credentials");
+                throw new Error('Missing Session Credentials');
             }
 
             const response = await fetch(`${API_BASE_URL}`, {
@@ -201,7 +233,7 @@ export const dashboardService = {
             const databaseName = 'azzahrawi_azzahrawi';
 
             if (!appCode || !databaseName) {
-                throw new Error("Missing Session Credentials");
+                throw new Error('Missing Session Credentials');
             }
 
             const response = await fetch(`${API_BASE_URL}`, {
@@ -225,7 +257,7 @@ export const getFinanceSummary = async (): Promise<FinanceSummaryResponse> => {
         const databaseName = 'azzahrawi_azzahrawi';
 
         if (!appCode || !databaseName) {
-            throw new Error("Missing Session Credentials");
+            throw new Error('Missing Session Credentials');
         }
 
         const response = await fetch(`${API_BASE_URL}`, {
@@ -235,6 +267,7 @@ export const getFinanceSummary = async (): Promise<FinanceSummaryResponse> => {
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data: FinanceSummaryResponse = await response.json();
+        // console.log('📦 [API DATA] FinanceSummary Response:', data);
         return data;
     } catch (error) {
         console.error('Error fetching finance summary:', error);
@@ -242,8 +275,30 @@ export const getFinanceSummary = async (): Promise<FinanceSummaryResponse> => {
     }
 };
 
+export const getFinanceOutstandingAmount = async (): Promise<FinanceOutstandingAmountResponse> => {
+    try {
+        // Retrieve credentials dynamically
+        const appCode = 'azzahrawi';
+        const databaseName = 'azzahrawi_azzahrawi';
 
+        if (!appCode || !databaseName) {
+            throw new Error('Missing Session Credentials');
+        }
 
+        const response = await fetch(`${API_OUTSTANDING_AMOUNT_URL}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ appCode, databaseName, payloadType: 'OUTSTANDING_INVOICE' }),
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data: FinanceOutstandingAmountResponse = await response.json();
+        console.log('📦 [API DATA] FinanceOutstandingAmount Response:', data);
+        return data;
+    } catch (error) {
+        console.error('Error fetching finance outstanding amount:', error);
+        throw error;
+    }
+};
 
 // ============================================================
 // 2. CORE DATA PROCESSING FUNCTIONS
@@ -618,4 +673,139 @@ export const formatLargeNumber = (value: number): string => {
         return (value / 1000).toFixed(0) + 'K';
     }
     return value.toFixed(0);
+};
+
+// ============================================================
+// 8. DATA PROCESSING - OUTSTANDING AMOUNTS
+// ============================================================
+
+/**
+ * Processes the monthly outstanding API response to group data by Zone.
+ * Returns data compatible with the Dashboard TableRow structure.
+ */
+export const calculateOutstandingAmountsByZone = (
+    outstandingBranches: any[], // The 'branches' array from your new API
+    systemBranches: any[], // To map BranchID -> Zone
+    year: number,
+): { tableData: FinanceDataRow[]; totalsRow: FinanceDataRow } => {
+    // 1. Setup Zone Map
+    const zoneMap = new Map<
+        string,
+        {
+            months: number[];
+            total: number;
+            color: string;
+            zoneName: string;
+            zoneCode: string;
+        }
+    >();
+
+    const colors = ['blue', 'purple', 'orange', 'green', 'red', 'cyan', 'pink', 'yellow'];
+    let colorIndex = 0;
+
+    // 2. Initialize Zones from System Info
+    systemBranches.forEach((sysBranch: any) => {
+        const zoneCode = sysBranch.zone?.trim();
+        const zoneName = sysBranch.zoneName?.trim() || zoneCode || 'Unknown Zone';
+
+        if (zoneCode && !zoneMap.has(zoneCode)) {
+            zoneMap.set(zoneCode, {
+                months: new Array(12).fill(0),
+                total: 0,
+                color: colors[colorIndex % colors.length],
+                zoneName: zoneName,
+                zoneCode: zoneCode,
+            });
+            colorIndex++;
+        }
+    });
+
+    // 3. Create Lookup Map for Branch -> Zone
+    const branchToZoneMap = new Map<number, string>();
+    systemBranches.forEach((sysBranch: any) => {
+        if (sysBranch.branchId !== undefined && sysBranch.zone) {
+            branchToZoneMap.set(sysBranch.branchId, sysBranch.zone.trim());
+        }
+    });
+
+    // 4. Aggregate Outstanding Data
+    outstandingBranches.forEach((branch: any) => {
+        const zoneCode = branchToZoneMap.get(branch.branchId);
+        if (!zoneCode) return;
+
+        const zoneData = zoneMap.get(zoneCode);
+        if (!zoneData) return;
+
+        // Note: The new API returns data in 'monthly_outstanding'
+        const yearData = branch.monthly_outstanding?.find((y: any) => y.year === year);
+
+        if (yearData && yearData.records) {
+            yearData.records.forEach((record: any) => {
+                const monthIndex = record.month - 1;
+                if (monthIndex >= 0 && monthIndex < 12) {
+                    zoneData.months[monthIndex] += record.total || 0;
+                }
+            });
+        }
+    });
+
+    // 5. Build Table Rows using FinanceDataRow interface
+    const tableData: FinanceDataRow[] = [];
+    const monthTotals = new Array(12).fill(0); // Store totals for all 12 months
+    let grandTotal = 0;
+
+    const sortedZones = Array.from(zoneMap.entries()).sort((a, b) => a[1].zoneName.localeCompare(b[1].zoneName));
+
+    sortedZones.forEach(([zoneCode, data]) => {
+        // Calculate totals for all months
+        const rowTotal = data.months.reduce((sum, val) => sum + val, 0);
+        grandTotal += rowTotal;
+
+        // Accumulate vertical totals
+        for (let i = 0; i < 12; i++) {
+            monthTotals[i] += data.months[i];
+        }
+
+        const row: FinanceDataRow = {
+            zone: data.zoneName,
+            zoneCode: zoneCode,
+            // ✅ USING 'month_' KEYS to allow TableData.tsx to filter correctly
+            month_january: data.months[0],
+            month_february: data.months[1],
+            month_march: data.months[2],
+            month_april: data.months[3],
+            month_may: data.months[4],
+            month_june: data.months[5],
+            month_july: data.months[6],
+            month_august: data.months[7],
+            month_september: data.months[8],
+            month_october: data.months[9],
+            month_november: data.months[10],
+            month_december: data.months[11],
+            total: rowTotal,
+            color: data.color,
+        };
+
+        tableData.push(row);
+    });
+
+    // 6. Build Totals Row
+    const totalsRow: FinanceDataRow = {
+        zone: 'Total',
+        month_january: monthTotals[0],
+        month_february: monthTotals[1],
+        month_march: monthTotals[2],
+        month_april: monthTotals[3],
+        month_may: monthTotals[4],
+        month_june: monthTotals[5],
+        month_july: monthTotals[6],
+        month_august: monthTotals[7],
+        month_september: monthTotals[8],
+        month_october: monthTotals[9],
+        month_november: monthTotals[10],
+        month_december: monthTotals[11],
+        total: grandTotal,
+    };
+
+    return { tableData, totalsRow };
 };
