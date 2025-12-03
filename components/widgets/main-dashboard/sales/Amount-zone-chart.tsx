@@ -1,45 +1,70 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { useSelector } from 'react-redux';
 import { IRootState } from '@/store';
 import Dropdown from '@/components/dropdown';
 import IconHorizontalDots from '@/components/icon/icon-horizontal-dots';
 
-const OutstandingAmountChart = () => {
+// Helper to parse strings/numbers
+const parseAmount = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    if (typeof value === 'string') {
+        return parseFloat(value.replace(/,/g, '')) || 0;
+    }
+    return 0;
+};
+
+const monthKeys = [
+    'month_january',
+    'month_february',
+    'month_march',
+    'month_april',
+    'month_may',
+    'month_june',
+    'month_july',
+    'month_august',
+    'month_september',
+    'month_october',
+    'month_november',
+    'month_december',
+];
+
+interface OutstandingAmountChartProps {
+    tableData: any[]; // Data from the table
+    yearOptions: string[]; // List of years for dropdown
+    selectedYear: string; // Currently selected year
+    onYearChange: (year: string) => void; // Handler to update year
+    showOptionDropdown?: boolean; // ✅ New Prop: Toggle the three dots menu
+}
+
+const OutstandingAmountChart = ({
+    tableData = [],
+    yearOptions = [],
+    selectedYear = '2025',
+    onYearChange,
+    showOptionDropdown = true, // Default to true
+}: OutstandingAmountChartProps) => {
     const isDark = useSelector((state: IRootState) => state.themeConfig.theme === 'dark' || state.themeConfig.isDarkMode);
     const isRtl = useSelector((state: IRootState) => state.themeConfig.rtlClass) === 'rtl';
-    const [isMounted, setIsMounted] = useState(false);
 
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    // Transform Table Data into Chart Series
+    const series = useMemo(() => {
+        if (!tableData || tableData.length === 0) return [];
+        return tableData.map((row) => {
+            const dataPoints = monthKeys.map((key) => parseAmount(row[key]));
+            return {
+                name: row.zone || 'Unknown Zone',
+                data: dataPoints,
+            };
+        });
+    }, [tableData]);
 
     const dropdownOptions = ['View Report', 'Export Data', 'Edit Chart'];
-
-    const labels = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
-
-    const series = [
-        {
-            name: 'HILL PARK',
-            data: [600, 13173, 200, 1560, 3050, 4810, 10335, 0, 0, 0, 0, 0],
-        },
-        {
-            name: 'SETIA ALAM',
-            data: [1100, 6105, 1775, 2620, 2470, 2700, 13528, 0, 0, 0, 0, 0],
-        },
-        {
-            name: 'PUNCAK ALAM',
-            data: [400, 6783, 395, 0, 650, 8680, 11507, 0, 0, 0, 0, 0],
-        },
-        {
-            name: 'TRANSIT',
-            data: [139, 0, 0, 0, 183, 1527, 3645, 0, 0, 0, 0, 0],
-        },
-    ];
-
-    const colors = ['#3b82f6', '#ef4444', '#f97316', '#10b981'];
+    const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const colors = ['#4361ee', '#e7515a', '#00ab55', '#e2a03f', '#805dca', '#2196f3'];
 
     const chartOptions: any = {
         chart: {
@@ -75,10 +100,9 @@ const OutstandingAmountChart = () => {
         },
         yaxis: {
             min: 0,
-            max: 15000,
-            tickAmount: 4,
+            tickAmount: 5,
             labels: {
-                formatter: (val: number) => (val >= 1000 ? `${val / 1000}K` : val.toString()),
+                formatter: (val: number) => (val >= 1000 ? `${(val / 1000).toFixed(0)}K` : val.toFixed(0)),
                 offsetX: isRtl ? -30 : -10,
                 offsetY: 0,
                 style: {
@@ -94,30 +118,29 @@ const OutstandingAmountChart = () => {
             strokeDashArray: 5,
         },
         legend: {
-            position: 'top',
-            horizontalAlign: 'right',
-            fontSize: '16px',
-            labels: {
-                colors: isDark ? '#ffffff' : '#374151',
+            position: 'bottom',
+            horizontalAlign: 'center',
+            fontSize: '14px',
+            fontFamily: 'Nunito, sans-serif',
+            // ✅ Legend Config: Fixed width to force 3 items per row wrapping
+            width: 500,
+            itemMargin: {
+                horizontal: 15,
+                vertical: 8,
             },
             markers: {
                 width: 10,
                 height: 10,
                 offsetX: -2,
             },
-            itemMargin: {
-                horizontal: 10,
-                vertical: 5,
+            labels: {
+                colors: isDark ? '#ffffff' : '#374151',
             },
         },
         tooltip: {
             theme: isDark ? 'dark' : 'light',
             y: {
-                formatter: (val: number) => {
-                    if (val >= 1_000_000) return `RM ${(val / 1_000_000).toFixed(1)}M`;
-                    if (val >= 1000) return `RM ${(val / 1000).toFixed(0)}K`;
-                    return `RM ${val}`;
-                },
+                formatter: (val: number) => `RM ${val.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
             },
         },
     };
@@ -126,30 +149,70 @@ const OutstandingAmountChart = () => {
         <div className="panel h-full">
             {/* Header */}
             <div className="mb-5 flex items-center justify-between dark:text-white-light">
-                <h5 className="text-lg font-semibold">Outstanding Amount by Zone</h5>
-                <div className="dropdown">
-                    <Dropdown offset={[0, 5]} placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`} button={<IconHorizontalDots className="text-black/70 hover:!text-primary dark:text-white/70" />}>
-                        <ul>
-                            {dropdownOptions.map((option, index) => (
-                                <li key={index}>
-                                    <button type="button" onClick={() => console.log(option)}>
-                                        {option}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    </Dropdown>
+                {/* ✅ Updated Title to include selectedYear */}
+                <h5 className="text-lg font-semibold">Outstanding Trend ({selectedYear})</h5>
+
+                <div className="flex items-center gap-2">
+                    {/* ✅ Year Dropdown (Matches DataTable Style) */}
+                    {yearOptions.length > 0 && (
+                        <div className="dropdown">
+                            <Dropdown
+                                offset={[0, 5]}
+                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                                btnClassName="btn btn-sm btn-outline-primary dropdown-toggle"
+                                button={
+                                    <span className="flex items-center">
+                                        {selectedYear}
+                                        <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                }
+                            >
+                                <ul className="max-h-60 overflow-y-auto">
+                                    {yearOptions.map((year) => (
+                                        <li key={year}>
+                                            <button type="button" onClick={() => onYearChange(year)} className={`w-full ${selectedYear === year ? 'bg-primary/10 text-primary' : ''}`}>
+                                                {year}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Dropdown>
+                        </div>
+                    )}
+
+                    {/* ✅ Options Dropdown (Three Dots) - Can be hidden via props */}
+                    {showOptionDropdown && (
+                        <div className="dropdown">
+                            <Dropdown
+                                offset={[0, 5]}
+                                placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
+                                button={<IconHorizontalDots className="text-black/70 hover:!text-primary dark:text-white/70" />}
+                            >
+                                <ul>
+                                    {dropdownOptions.map((option, index) => (
+                                        <li key={index}>
+                                            <button type="button" onClick={() => console.log(option)}>
+                                                {option}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Dropdown>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Chart */}
             <div className="relative">
                 <div className="rounded-lg bg-white dark:bg-black">
-                    {isMounted ? (
+                    {series.length > 0 ? (
                         <ReactApexChart series={series} options={chartOptions} type="line" height={350} width="100%" />
                     ) : (
                         <div className="grid place-content-center bg-white-light/30 dark:bg-dark dark:bg-opacity-[0.08]" style={{ minHeight: 350 }}>
-                            <span className="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-black !border-l-transparent dark:border-white"></span>
+                            <div className="text-center text-gray-500">{tableData.length === 0 ? 'Loading data...' : 'No outstanding data found'}</div>
                         </div>
                     )}
                 </div>

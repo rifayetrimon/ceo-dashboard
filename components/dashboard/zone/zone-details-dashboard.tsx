@@ -14,13 +14,7 @@ import Image from 'next/image';
 // ============================================================
 // SERVICE IMPORTS
 // ============================================================
-import {
-    dashboardService,
-    getFinanceSummary,
-    getFinanceOutstandingAmount, // ✅ Added API import
-    Branch,
-    FinanceDataRow, // ✅ Use the interface for consistency
-} from '@/services/sales/financeService';
+import { dashboardService, getFinanceSummary, getFinanceOutstandingAmount, Branch, FinanceDataRow } from '@/services/sales/financeService';
 
 import {
     calculateZoneSystemInfo,
@@ -47,7 +41,7 @@ import PieChart from '@/components/widgets/main-dashboard/pie-chart/Pie-chart';
 import BasicPieChart from '@/components/widgets/main-dashboard/basic-pie-chart/Basic-pie-chart';
 import GrossNetProfit from '@/components/widgets/main-dashboard/sales/Gross-Net-profit';
 import ZoneBar from '@/components/widgets/Zone-bar';
-import OutstandingAmountChart from '@/components/widgets/main-dashboard/sales/Amount-zone-chart'; // Assuming you have this component
+import OutstandingAmountChart from '@/components/widgets/main-dashboard/sales/Amount-zone-chart';
 
 // ============================================================
 // ICON COMPONENTS
@@ -71,7 +65,7 @@ const getDefaultZoneInfo = (): ZoneSystemInfo => ({
 });
 
 /**
- * ✅ UPDATED: Calculate outstanding amounts by BRANCH using the new API structure
+ * Calculate outstanding amounts by BRANCH using the new API structure
  * Maps data to 'month_' keys for the slider table.
  */
 const calculateOutstandingAmountsByBranch = (outstandingBranches: any[], systemBranches: any[], zoneName: string, year: number): { tableData: FinanceDataRow[]; totalsRow: FinanceDataRow } => {
@@ -132,10 +126,10 @@ const calculateOutstandingAmountsByBranch = (outstandingBranches: any[], systemB
             monthTotals[idx] += val;
         });
 
-        // ✅ Using 'month_' keys for slider compatibility
+        // Using 'month_' keys for slider compatibility
         const row: FinanceDataRow = {
-            zone: data.branchName, // Mapping branch name to 'zone' key for table display column (label is 'Branch')
-            branchId: id, // Custom key for click handling
+            zone: data.branchName, // Mapping branch name to 'zone' key for table/chart compatibility
+            branchId: id,
             zoneCode: id,
             color: data.color,
             month_january: data.months[0],
@@ -275,7 +269,6 @@ export default function ZoneDetailsDashboard() {
             setExpenseCategorySelectedYear(latestYear);
             setZoneFinancialPieYear(latestYear);
             setBranchComparisonYear(latestYear);
-            // Default outstanding year will be set in fetch
         }
     }, [zoneFinancialData, systemBranches]);
 
@@ -307,7 +300,6 @@ export default function ZoneDetailsDashboard() {
         try {
             setLoading(true);
 
-            // ✅ Added getFinanceOutstandingAmount
             const [systemInfoResponse, financeSummaryResponse, outstandingResponse] = await Promise.all([dashboardService.getSystemInfo(), getFinanceSummary(), getFinanceOutstandingAmount()]);
 
             const allSystemBranches = systemInfoResponse?.data?.branches || [];
@@ -354,7 +346,7 @@ export default function ZoneDetailsDashboard() {
     };
 
     // ============================================================
-    // CHART UPDATE FUNCTIONS (unchanged)
+    // CHART UPDATE FUNCTIONS
     // ============================================================
 
     const updateStatCards = (info: ZoneSystemInfo) => {
@@ -473,7 +465,6 @@ export default function ZoneDetailsDashboard() {
     // TABLE CONFIGURATION
     // ============================================================
 
-    // ✅ FIXED: Using 'month_' prefix keys to ensure slider works
     const outstandingAmountColumns: TableColumn[] = [
         { key: 'zone', label: 'Branch', align: 'left', width: '250px', clickable: true, truncate: true }, // Mapped branch name to 'zone' key for table
         { key: 'month_january', label: 'Jan', align: 'right', isAmount: true },
@@ -496,7 +487,7 @@ export default function ZoneDetailsDashboard() {
         showColorIndicator: true,
         showTotalRow: true,
         showYearFilter: true,
-        yearOptions: outstandingYears, // ✅ Populated from API
+        yearOptions: outstandingYears,
         selectedYear: outstandingTableYear,
         onYearChange: handleOutstandingTableYearChange,
         showMonthSlider: true,
@@ -703,7 +694,7 @@ export default function ZoneDetailsDashboard() {
                         )}
                     </div>
 
-                    {/* ROW 6 - OUTSTANDING AMOUNT TABLE (FIXED) */}
+                    {/* ROW 6 - OUTSTANDING AMOUNT TABLE */}
                     <div className="mb-6">
                         <DataTable
                             columns={outstandingAmountColumns}
@@ -718,9 +709,15 @@ export default function ZoneDetailsDashboard() {
                         />
                     </div>
 
-                    {/* ROW 7 - OUTSTANDING AMOUNT CHART */}
+                    {/* ROW 7 - OUTSTANDING AMOUNT CHART (UPDATED with props) */}
                     <div className="mb-6">
-                        <OutstandingAmountChart />
+                        <OutstandingAmountChart
+                            tableData={outstandingAmountData}
+                            yearOptions={outstandingYears}
+                            selectedYear={outstandingTableYear}
+                            onYearChange={handleOutstandingTableYearChange}
+                            showOptionDropdown={false}
+                        />
                     </div>
                 </div>
             </div>

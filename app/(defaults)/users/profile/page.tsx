@@ -14,17 +14,15 @@ import { useProfile } from '@/hook/user/useProfile';
 import Image from 'next/image';
 import PaymentHistory from './_components/payment-history';
 
-
 const Profile = () => {
     const { data } = useProfile();
-
 
     return (
         <div>
             <ul className="flex space-x-2 rtl:space-x-reverse">
                 <li>
-                    <Link href="#" className="text-primary hover:underline">
-                        Users
+                    <Link href="/" className="text-primary hover:underline">
+                        Home
                     </Link>
                 </li>
                 <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2">
@@ -56,7 +54,6 @@ const Profile = () => {
                                         <h5 className="text-2xl font-bold text-primary mb-1">{data?.name}</h5>
                                         <p className="text-white-dark font-semibold text-lg">{data?.job.designation || 'No data'}</p>
                                     </div>
-
                                 </div>
 
                                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-5 font-semibold text-white-dark">

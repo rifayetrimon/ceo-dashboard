@@ -14,6 +14,7 @@ import PieChart from '../widgets/main-dashboard/pie-chart/Pie-chart';
 import AreaChart from '../widgets/main-dashboard/area-chart/Area-chart';
 import GrossNetProfit from '../widgets/main-dashboard/sales/Gross-Net-profit';
 import ZoneBar from '../widgets/Zone-bar';
+// Ensure this path matches your project structure
 import OutstandingAmountChart from '../widgets/main-dashboard/sales/Amount-zone-chart';
 import { StatCardData, StatsGrid } from '../widgets/main-dashboard/stat-card/StatCard';
 import { DataTable, DataTableConfig, TableColumn, TableRow } from '../widgets/main-dashboard/table-data/TableData';
@@ -32,7 +33,6 @@ import {
     processExpenseCategoryTotalsForYear,
     processCategoryTotalsForYear,
     processCompanyFinancialsByYear,
-    calculateYearRangeTotals,
     getLatestYearsProfitData,
 } from '@/services/sales/financeService';
 
@@ -71,42 +71,36 @@ export default function FinanceDashboard() {
 
     const [isMounted, setIsMounted] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Stats & Metrics
     const [stats, setStats] = useState<StatCardData[]>([]);
     const [dashboardMetrics, setDashboardMetrics] = useState<any>(null);
     const [financeData, setFinanceData] = useState<ProcessedFinanceData | null>(null);
+
+    // Main Chart State
     const [selectedYear, setSelectedYear] = useState<string>('2025');
     const [chartSeries, setChartSeries] = useState<ChartSeriesData[]>([]);
-
-    // ✅ STATE: Zone & Summary Years
-    const [selectedSummaryYear, setSelectedSummaryYear] = useState<string>('2025');
-    const [selectedZoneYear, setSelectedZoneYear] = useState<number>(new Date().getFullYear());
-
-    const [startYear, setStartYear] = useState('2021');
-    const [endYear, setEndYear] = useState('2025');
-
-    // Company Financial Data State
-    const [companyFinancialYear, setCompanyFinancialYear] = useState<string>('2025');
-    const [companyFinancialData, setCompanyFinancialData] = useState<{
-        totalProfit: number;
-        labels: string[];
-        series: number[];
-    }>({ totalProfit: 0, labels: [], series: [] });
+    const [financeTotals, setFinanceTotals] = useState({ revenue: 0, cost: 0, profit: 0, profitMargin: '0.00' });
+    const [yearlyProfitData, setYearlyProfitData] = useState<{ years: string[]; profitData: number[] }>({ years: [], profitData: [] });
 
     // Category Charts State
+    const [companyFinancialYear, setCompanyFinancialYear] = useState<string>('2025');
+    const [companyFinancialData, setCompanyFinancialData] = useState<{ totalProfit: number; labels: string[]; series: number[] }>({ totalProfit: 0, labels: [], series: [] });
+
     const [incomeCategoryChartData, setIncomeCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
     const [incomeCategorySelectedYear, setIncomeCategorySelectedYear] = useState<string>('2025');
+
     const [costCategoryChartData, setCostCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
     const [costCategorySelectedYear, setCostCategorySelectedYear] = useState<string>('2025');
+
     const [expenseCategoryChartData, setExpenseCategoryChartData] = useState<{ labels: string[]; series: number[] }>({ labels: [], series: [] });
     const [expenseCategorySelectedYear, setExpenseCategorySelectedYear] = useState<string>('2025');
 
     // General Data State
     const [availableYears, setAvailableYears] = useState<string[]>([]);
     const [rawBranchData, setRawBranchData] = useState<any[]>([]);
-    const [financeTotals, setFinanceTotals] = useState({ revenue: 0, cost: 0, profit: 0, profitMargin: '0.00' });
-    const [yearlyProfitData, setYearlyProfitData] = useState<{ years: string[]; profitData: number[] }>({ years: [], profitData: [] });
 
-    // ✅ OUTSTANDING AMOUNT STATES
+    // ✅ OUTSTANDING AMOUNT STATES (TABLE & CHART)
     const [rawOutstandingData, setRawOutstandingData] = useState<any[]>([]);
     const [outstandingAmountData, setOutstandingAmountData] = useState<TableRow[]>([]);
     const [outstandingAmountTotals, setOutstandingAmountTotals] = useState<TableRow>({
@@ -119,10 +113,15 @@ export default function FinanceDashboard() {
         may: '0',
         june: '0',
         july: '0',
+        august: '0',
+        september: '0',
+        october: '0',
+        november: '0',
+        december: '0',
         total: '0',
     });
     const [outstandingTableYear, setOutstandingTableYear] = useState<string>('2025');
-    const [outstandingYears, setOutstandingYears] = useState<string[]>([]); // New state for dropdown options
+    const [outstandingYears, setOutstandingYears] = useState<string[]>([]); // For Dropdowns
 
     // ============================================================
     // COMPUTED VALUES
@@ -156,9 +155,6 @@ export default function FinanceDashboard() {
     // ============================================================
     useEffect(() => {
         setIsMounted(true);
-    }, []);
-
-    useEffect(() => {
         fetchDashboardData();
     }, []);
 
@@ -174,15 +170,12 @@ export default function FinanceDashboard() {
         }
     }, [companyFinancialYear, rawBranchData]);
 
-    // ✅ UPDATE OUTSTANDING TABLE WHEN YEAR OR DATA CHANGES
+    // Update Outstanding Table when year/data changes
     useEffect(() => {
         if (dashboardMetrics?.systemBranches && rawOutstandingData.length > 0 && outstandingTableYear) {
             const yearNum = parseInt(outstandingTableYear);
-
-            // Use service function to calculate data for the selected year
             const { tableData, totalsRow } = calculateOutstandingAmountsByZone(rawOutstandingData, dashboardMetrics.systemBranches, yearNum);
 
-            // Cast to TableRow[] to match component type
             setOutstandingAmountData(tableData as unknown as TableRow[]);
             setOutstandingAmountTotals(totalsRow as unknown as TableRow);
         }
@@ -196,33 +189,27 @@ export default function FinanceDashboard() {
             setLoading(true);
             const [systemInfoResponse, financeSummaryResponse, outstandingResponse] = await Promise.all([dashboardService.getSystemInfo(), getFinanceSummary(), getFinanceOutstandingAmount()]);
 
-            // --- Process Finance Summary (Charts) ---
+            // 1. Process Finance Summary & System Info
             if (systemInfoResponse?.data?.systemInfo && financeSummaryResponse?.data?.branches) {
                 const systemInfo = systemInfoResponse.data.systemInfo;
-                const branches = systemInfoResponse.data.branches || [];
-                const financeBranches = financeSummaryResponse.data.branches || [];
+                const branches = systemInfoResponse.data.branches || []; // System Branches
+                const financeBranches = financeSummaryResponse.data.branches || []; // Finance Data
                 setRawBranchData(financeBranches);
 
+                // Calculate Years
                 const yearsSet = new Set<number>();
                 financeBranches.forEach((branch: any) => {
-                    branch.monthly_revenue?.forEach((yearData: any) => {
-                        yearsSet.add(yearData.year);
-                    });
+                    branch.monthly_revenue?.forEach((yearData: any) => yearsSet.add(yearData.year));
                 });
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
-
                 const categoryYears = getAvailableYears(financeBranches);
                 setAvailableYears(categoryYears);
-                if (categoryYears.length > 0) {
-                    setStartYear(categoryYears[categoryYears.length - 1]);
-                    setEndYear(categoryYears[0]);
-                }
 
                 const currentYear = years.length > 0 ? years[0] : new Date().getFullYear();
                 const processed = processFinanceData(financeBranches);
                 setFinanceData(processed);
 
-                // Initialize Charts
+                // Initialize Main Charts
                 if (processed.years.length > 0) {
                     const latestYear = processed.years[0];
                     setSelectedYear(latestYear);
@@ -244,6 +231,7 @@ export default function FinanceDashboard() {
                     updateExpenseCategoryChart(financeBranches, latestYear);
                 }
 
+                // Metrics Calculation
                 const uniqueZones = new Set(branches.map((branch: any) => branch.zone).filter((zone: string) => zone && zone.trim() !== ''));
                 const zoneFinancials = calculateZoneWiseFinancials(financeBranches, branches, currentYear);
 
@@ -262,8 +250,8 @@ export default function FinanceDashboard() {
                 };
                 setDashboardMetrics(calculatedMetrics);
 
-                // Initialize Stats Cards
-                const updatedStats: StatCardData[] = [
+                // Stats Cards
+                setStats([
                     {
                         title: 'Total Zones',
                         value: calculatedMetrics.totalUniqueZones.toString(),
@@ -296,16 +284,15 @@ export default function FinanceDashboard() {
                         iconSize: 'xl',
                         icon: <Image src="/assets/images/icons/staff.svg" alt="staff" width={35} height={35} className="brightness-0 invert opacity-90" />,
                     },
-                ];
-                setStats(updatedStats);
+                ]);
             }
 
-            // --- Process Outstanding Data (Table) ---
+            // 2. Process Outstanding Data
             if ((outstandingResponse as any)?.data?.branches) {
                 const oData = (outstandingResponse as any).data.branches;
                 setRawOutstandingData(oData);
 
-                // ✅ EXTRACT AVAILABLE YEARS FOR DROPDOWN
+                // Extract Available Years for Dropdown
                 const yearsSet = new Set<string>();
                 oData.forEach((b: any) => {
                     b.monthly_outstanding?.forEach((item: any) => {
@@ -315,51 +302,38 @@ export default function FinanceDashboard() {
                 const sortedOutstandingYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
                 setOutstandingYears(sortedOutstandingYears);
 
-                // Default to latest year if current isn't valid
+                // Default to latest year
                 if (sortedOutstandingYears.length > 0 && !sortedOutstandingYears.includes(outstandingTableYear)) {
                     setOutstandingTableYear(sortedOutstandingYears[0]);
                 }
             }
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
-            setStats(getDefaultStats());
+            // setStats(getDefaultStats()); // Optional: set fallback stats
         } finally {
             setLoading(false);
         }
     };
 
     // ============================================================
-    // CHART UPDATES
+    // UPDATERS & HANDLERS
     // ============================================================
     const updateChartForYear = (year: string, data: ProcessedFinanceData | null = null) => {
         const processedData = data || financeData;
         if (!processedData) return;
         const series = getChartSeriesForYear(processedData, year, true, true, false);
         setChartSeries(series);
-        const totals = calculateYearTotals(processedData, year);
-        setFinanceTotals(totals);
-    };
-    const updateIncomeCategoryChart = (branches: any[], year: string) => {
-        const categoryData = processCategoryTotalsForYear(branches, year);
-        setIncomeCategoryChartData(categoryData);
-    };
-    const updateCostCategoryChart = (branches: any[], year: string) => {
-        const expenseData = processExpenseCategoryTotalsForYear(branches, year);
-        setCostCategoryChartData(expenseData);
-    };
-    const updateExpenseCategoryChart = (branches: any[], year: string) => {
-        const expenseData = processExpenseCategoryTotalsForYear(branches, year);
-        setExpenseCategoryChartData(expenseData);
-    };
-    const updateCompanyFinancialChart = (branches: any[], year: string) => {
-        const financialData = processCompanyFinancialsByYear(branches, year);
-        setCompanyFinancialData(financialData);
+        setFinanceTotals(calculateYearTotals(processedData, year));
     };
 
-    // ============================================================
-    // EVENT HANDLERS
-    // ============================================================
+    const updateIncomeCategoryChart = (branches: any[], year: string) => setIncomeCategoryChartData(processCategoryTotalsForYear(branches, year));
+    const updateCostCategoryChart = (branches: any[], year: string) => setCostCategoryChartData(processExpenseCategoryTotalsForYear(branches, year));
+    const updateExpenseCategoryChart = (branches: any[], year: string) => setExpenseCategoryChartData(processExpenseCategoryTotalsForYear(branches, year));
+    const updateCompanyFinancialChart = (branches: any[], year: string) => setCompanyFinancialData(processCompanyFinancialsByYear(branches, year));
+
+    // Handlers
     const handleYearChange = (year: string) => setSelectedYear(year);
+
     const handleIncomeCategoryYearChange = (year: string) => {
         setIncomeCategorySelectedYear(year);
         updateIncomeCategoryChart(rawBranchData, year);
@@ -378,33 +352,29 @@ export default function FinanceDashboard() {
     };
     const handleZoneYearChange = (year: string) => {
         const yearNum = parseInt(year);
-        setSelectedZoneYear(yearNum);
         if (dashboardMetrics?.branches && dashboardMetrics?.systemBranches) {
             const zoneFinancials = calculateZoneWiseFinancials(dashboardMetrics.branches, dashboardMetrics.systemBranches, yearNum);
-            const updatedZoneChartData = {
-                categories: zoneFinancials.map((z) => z.zoneName),
-                income: zoneFinancials.map((z) => z.totalIncome),
-                expense: zoneFinancials.map((z) => z.totalExpense),
-                profit: zoneFinancials.map((z) => z.totalProfit),
-            };
-            setDashboardMetrics((prev: any) => ({ ...prev, zoneChartData: updatedZoneChartData }));
+            setDashboardMetrics((prev: any) => ({
+                ...prev,
+                zoneChartData: {
+                    categories: zoneFinancials.map((z) => z.zoneName),
+                    income: zoneFinancials.map((z) => z.totalIncome),
+                    expense: zoneFinancials.map((z) => z.totalExpense),
+                    profit: zoneFinancials.map((z) => z.totalProfit),
+                },
+            }));
         }
     };
-    const handleOutstandingTableYearChange = (year: string) => {
-        setOutstandingTableYear(year);
-    };
-    const handleViewReport = (index: number) => console.log('View report for:', stats[index].title);
-    const handleEditReport = (index: number) => console.log('Edit report for:', stats[index].title);
-    function handleTableView(): void {
-        console.log('Table view action');
-    }
-    function handleTableDelete(): void {
-        console.log('Table delete action');
-    }
+    const handleOutstandingTableYearChange = (year: string) => setOutstandingTableYear(year);
+
+    // Navigation & Actions
+    const handleViewReport = (index: number) => console.log('View report for:', stats[index]?.title);
+    const handleEditReport = (index: number) => console.log('Edit report for:', stats[index]?.title);
+    const handleTableView = () => console.log('Table view action');
+    const handleTableDelete = () => console.log('Table delete action');
 
     const handleZoneClick = (row: TableRow, columnKey: string) => {
         if (columnKey === 'zone') {
-            const zoneName = row.zone as string;
             const zoneCode = row.zoneCode as string;
             const systemBranch = dashboardMetrics?.systemBranches?.find((sb: any) => sb.zone?.trim() === zoneCode?.trim());
             const hasZoneName = systemBranch?.zoneName && systemBranch.zoneName.trim() !== '';
@@ -415,21 +385,8 @@ export default function FinanceDashboard() {
     };
 
     // ============================================================
-    // UTILITY & CONFIG
+    // CONFIGURATION
     // ============================================================
-    const getDefaultStats = (): StatCardData[] => [
-        {
-            title: 'Total Zones',
-            value: '0',
-            valueSize: 'xl',
-            gradient: 'bg-gradient-to-r from-cyan-500 to-cyan-400',
-            iconSize: 'xl',
-            icon: <Image src="/assets/images/icons/zone1.svg" alt="zones" width={35} height={35} className="brightness-0 invert opacity-90" />,
-        },
-        // ... (other default stats)
-    ];
-
-    // ✅ FIXED COLUMN KEYS: Using 'month_' prefix ensures the slider works
     const outstandingAmountColumns: TableColumn[] = [
         { key: 'zone', label: 'Zone', align: 'left', width: '200px', clickable: true },
         { key: 'month_january', label: 'Jan', align: 'right', isAmount: true },
@@ -447,7 +404,6 @@ export default function FinanceDashboard() {
         { key: 'total', label: 'Total', align: 'right', isAmount: true, width: '120px' },
     ];
 
-    // ✅ CONFIG WITH YEAR DROPDOWN
     const outstandingAmountConfig: DataTableConfig = {
         title: 'Outstanding Amount by Zone',
         showColorIndicator: true,
@@ -468,158 +424,168 @@ export default function FinanceDashboard() {
     }
 
     return (
-        <>
-            <div className="px-4 sm:px-6 lg:px-8">
-                <ul className="flex space-x-2 rtl:space-x-reverse">
-                    <li>
-                        <Link href="/" className="text-primary hover:underline">
-                            CEO Dashboard
-                        </Link>
-                    </li>
-                    <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2">
-                        <span>Finance</span>
-                    </li>
-                </ul>
+        <div className="px-4 sm:px-6 lg:px-8">
+            <ul className="flex space-x-2 rtl:space-x-reverse">
+                <li>
+                    <Link href="/" className="text-primary hover:underline">
+                        CEO Dashboard
+                    </Link>
+                </li>
+                <li className="before:content-['/'] ltr:before:mr-2 rtl:before:ml-2">
+                    <span>Finance</span>
+                </li>
+            </ul>
 
-                <div className="pt-5">
-                    <StatsGrid stats={stats} isRtl={isRtl} onViewReport={handleViewReport} onEditReport={handleEditReport} />
+            <div className="pt-5">
+                {/* 1. Stats Cards */}
+                <StatsGrid stats={stats} isRtl={isRtl} onViewReport={handleViewReport} onEditReport={handleEditReport} />
 
-                    {/* Charts omitted for brevity, they are same as before */}
-                    <div className="mb-6 grid gap-6 lg:grid-cols-3">
-                        <div className="lg:col-span-2">
-                            <AreaChart
-                                title="Financial Overview"
-                                showYearFilter={true}
-                                yearOptions={financeData?.years || []}
-                                showDropdown={false}
-                                series={chartSeries.map((s) => ({ ...s, name: s.name === 'Cost' ? 'Expense' : s.name }))}
-                                labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
-                                height={325}
-                                onYearSelect={handleYearChange}
-                                yAxisFormatter={(value: number) => (value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toFixed(0))}
-                            />
-                        </div>
-                        <div className="lg:col-span-1">
-                            <PieChart
-                                title="Company Financial Overview"
-                                series={companyFinancialData.series}
-                                labels={companyFinancialData.labels.map((label) => (label === 'Cost' ? 'Expense' : label))}
-                                height={340}
-                                showDropdown={false}
-                                showYearFilter={true}
-                                yearOptions={availableYears}
-                                selectedYear={companyFinancialYear}
-                                onYearChange={handleCompanyFinancialYearChange}
-                            />
-                        </div>
+                {/* 2. Main Area Chart & Company Pie Chart */}
+                <div className="mb-6 grid gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2">
+                        <AreaChart
+                            title="Financial Overview"
+                            showYearFilter={true}
+                            yearOptions={financeData?.years || []}
+                            showDropdown={false}
+                            series={chartSeries.map((s) => ({ ...s, name: s.name === 'Cost' ? 'Expense' : s.name }))}
+                            labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
+                            height={325}
+                            onYearSelect={handleYearChange}
+                            yAxisFormatter={(value: number) => (value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toFixed(0))}
+                        />
                     </div>
-
-                    <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <BasicPieChart
-                            chartTitle="Income By Category"
-                            series={incomeCategoryChartData.series}
-                            labels={incomeCategoryChartData.labels}
-                            colors={['#00ab55', '#4361ee', '#805dca', '#e2a03f', '#e7515a', '#2196f3']}
+                    <div className="lg:col-span-1">
+                        <PieChart
+                            title="Company Financial Overview"
+                            series={companyFinancialData.series}
+                            labels={companyFinancialData.labels.map((label) => (label === 'Cost' ? 'Expense' : label))}
                             height={340}
+                            showDropdown={false}
                             showYearFilter={true}
                             yearOptions={availableYears}
-                            selectedYear={incomeCategorySelectedYear}
-                            onYearChange={handleIncomeCategoryYearChange}
-                            showDropdown={false}
+                            selectedYear={companyFinancialYear}
+                            onYearChange={handleCompanyFinancialYearChange}
                         />
-                        <BasicPieChart
-                            chartTitle="Expense By Category"
-                            series={costCategoryChartData.series}
-                            labels={costCategoryChartData.labels}
-                            colors={['#e7515a', '#e2a03f', '#805dca', '#4361ee', '#2196f3', '#00ab55']}
-                            height={340}
-                            showYearFilter={true}
-                            selectedYear={costCategorySelectedYear}
-                            onYearChange={handleCostCategoryYearChange}
-                            showDropdown={false}
-                        />
-                        <div className="md:col-span-2 lg:col-span-1">
-                            <PieChart
-                                title="Expense By Category"
-                                series={expenseCategoryChartData.series}
-                                labels={expenseCategoryChartData.labels}
-                                height={340}
-                                showDropdown={false}
-                                showYearFilter={true}
-                                yearOptions={availableYears}
-                                selectedYear={expenseCategorySelectedYear}
-                                onYearChange={handleExpenseCategoryYearChange}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="mb-6 grid gap-6 lg:grid-cols-3">
-                        <div className="lg:col-span-2">
-                            <AreaChart
-                                title="Yearly Financial Overview"
-                                showYearFilter={false}
-                                yearOptions={financeData?.years || []}
-                                showDropdown={false}
-                                series={yearlyFinancialSeries.series.map((s) => ({ ...s, name: s.name === 'Cost' ? 'Expense' : s.name }))}
-                                labels={yearlyFinancialSeries.labels}
-                                height={325}
-                                yAxisFormatter={(value: number) => (value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toFixed(0))}
-                            />
-                        </div>
-                        <div className="lg:col-span-1">
-                            <GrossNetProfit
-                                title="Yearly Profit Trend"
-                                subtitle="Last 5 years profit overview"
-                                icon={<IconDollarSign />}
-                                series={[{ name: 'Profit', data: yearlyProfitData.profitData }]}
-                                categories={yearlyProfitData.years}
-                                height={325}
-                                colors={['#00ab55']}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="mb-6">
-                        {dashboardMetrics?.zoneChartData ? (
-                            <ZoneBar
-                                chartTitle={`Total Income Breakdown By Zone`}
-                                series={[
-                                    { name: 'INCOME', data: dashboardMetrics.zoneChartData.income },
-                                    { name: 'EXPENSE', data: dashboardMetrics.zoneChartData.expense },
-                                    { name: 'PROFIT', data: dashboardMetrics.zoneChartData.profit },
-                                ]}
-                                categories={dashboardMetrics.zoneChartData.categories}
-                                colors={['#10b981', '#ef4444', '#8b5cf6']}
-                                negativeColor="#FF4757"
-                                showYearFilter={true}
-                                showDropdown={false}
-                                yearOptions={dashboardMetrics?.years.map(String) || []}
-                                onYearSelect={handleZoneYearChange}
-                            />
-                        ) : (
-                            <div className="panel p-5 text-center">Loading zone data...</div>
-                        )}
-                    </div>
-
-                    <div className="mb-6">
-                        <DataTable
-                            columns={outstandingAmountColumns}
-                            data={outstandingAmountData}
-                            totals={outstandingAmountTotals}
-                            config={outstandingAmountConfig}
-                            isRtl={isRtl}
-                            onViewReport={handleTableView}
-                            onEditReport={handleTableView}
-                            onDeleteReport={handleTableDelete}
-                            onCellClick={handleZoneClick}
-                        />
-                    </div>
-
-                    <div className="mb-6">
-                        <OutstandingAmountChart />
                     </div>
                 </div>
+
+                {/* 3. Category Charts */}
+                <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <BasicPieChart
+                        chartTitle="Income By Category"
+                        series={incomeCategoryChartData.series}
+                        labels={incomeCategoryChartData.labels}
+                        colors={['#00ab55', '#4361ee', '#805dca', '#e2a03f', '#e7515a', '#2196f3']}
+                        height={340}
+                        showYearFilter={true}
+                        yearOptions={availableYears}
+                        selectedYear={incomeCategorySelectedYear}
+                        onYearChange={handleIncomeCategoryYearChange}
+                        showDropdown={false}
+                    />
+                    <BasicPieChart
+                        chartTitle="Expense By Category"
+                        series={costCategoryChartData.series}
+                        labels={costCategoryChartData.labels}
+                        colors={['#e7515a', '#e2a03f', '#805dca', '#4361ee', '#2196f3', '#00ab55']}
+                        height={340}
+                        showYearFilter={true}
+                        selectedYear={costCategorySelectedYear}
+                        onYearChange={handleCostCategoryYearChange}
+                        showDropdown={false}
+                    />
+                    <div className="md:col-span-2 lg:col-span-1">
+                        <PieChart
+                            title="Expense By Category"
+                            series={expenseCategoryChartData.series}
+                            labels={expenseCategoryChartData.labels}
+                            height={340}
+                            showDropdown={false}
+                            showYearFilter={true}
+                            yearOptions={availableYears}
+                            selectedYear={expenseCategorySelectedYear}
+                            onYearChange={handleExpenseCategoryYearChange}
+                        />
+                    </div>
+                </div>
+
+                {/* 4. Yearly Overview & Profit Trend */}
+                <div className="mb-6 grid gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2">
+                        <AreaChart
+                            title="Yearly Financial Overview"
+                            showYearFilter={false}
+                            yearOptions={financeData?.years || []}
+                            showDropdown={false}
+                            series={yearlyFinancialSeries.series.map((s) => ({ ...s, name: s.name === 'Cost' ? 'Expense' : s.name }))}
+                            labels={yearlyFinancialSeries.labels}
+                            height={325}
+                            yAxisFormatter={(value: number) => (value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toFixed(0))}
+                        />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <GrossNetProfit
+                            title="Yearly Profit Trend"
+                            subtitle="Last 5 years profit overview"
+                            icon={<IconDollarSign />}
+                            series={[{ name: 'Profit', data: yearlyProfitData.profitData }]}
+                            categories={yearlyProfitData.years}
+                            height={325}
+                            colors={['#00ab55']}
+                        />
+                    </div>
+                </div>
+
+                {/* 5. Zone Bar Chart */}
+                <div className="mb-6">
+                    {dashboardMetrics?.zoneChartData ? (
+                        <ZoneBar
+                            chartTitle={`Total Income Breakdown By Zone`}
+                            series={[
+                                { name: 'INCOME', data: dashboardMetrics.zoneChartData.income },
+                                { name: 'EXPENSE', data: dashboardMetrics.zoneChartData.expense },
+                                { name: 'PROFIT', data: dashboardMetrics.zoneChartData.profit },
+                            ]}
+                            categories={dashboardMetrics.zoneChartData.categories}
+                            colors={['#10b981', '#ef4444', '#8b5cf6']}
+                            negativeColor="#FF4757"
+                            showYearFilter={true}
+                            showDropdown={false}
+                            yearOptions={dashboardMetrics?.years.map(String) || []}
+                            onYearSelect={handleZoneYearChange}
+                        />
+                    ) : (
+                        <div className="panel p-5 text-center">Loading zone data...</div>
+                    )}
+                </div>
+
+                {/* 6. Outstanding Amount Table */}
+                <div className="mb-6">
+                    <DataTable
+                        columns={outstandingAmountColumns}
+                        data={outstandingAmountData}
+                        totals={outstandingAmountTotals}
+                        config={outstandingAmountConfig}
+                        isRtl={isRtl}
+                        onViewReport={handleTableView}
+                        onEditReport={handleTableView}
+                        onDeleteReport={handleTableDelete}
+                        onCellClick={handleZoneClick}
+                    />
+                </div>
+
+                {/* Outstanding Amount Chart */}
+                <div className="mb-6">
+                    <OutstandingAmountChart
+                        showOptionDropdown={false}
+                        tableData={outstandingAmountData}
+                        yearOptions={outstandingYears}
+                        selectedYear={outstandingTableYear}
+                        onYearChange={handleOutstandingTableYearChange}
+                    />
+                </div>
             </div>
-        </>
+        </div>
     );
 }

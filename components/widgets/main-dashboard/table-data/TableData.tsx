@@ -165,7 +165,7 @@ export const DataTable: React.FC<DataTableProps> = ({ columns, data, totals, con
             <div className="mb-5 flex items-center justify-between dark:text-white-light pb-4 pt-4">
                 <h5 className="text-lg font-semibold">
                     {config.title}
-                    <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">(RM)</span>
+                    <span className="ml-2 text-lg font-normal text-gray-900 dark:text-gray-900">(RM)</span>
                 </h5>
 
                 {/* Year Filter Dropdown */}

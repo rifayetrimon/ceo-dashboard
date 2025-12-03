@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BarChart3, UserPlus, Megaphone, BookOpenText, School, BookA, ArrowUpRight } from 'lucide-react';
+import { BarChart3, UserPlus, Megaphone, BookOpenText, School, BookA, ArrowUpRight, ExternalLink } from 'lucide-react';
 import Calendar from '@/components/widgets/calendar';
 
 export default function HomeMenu() {
@@ -106,12 +106,8 @@ export default function HomeMenu() {
                                             <IconComponent className={`w-6 h-6 md:w-7 md:h-7 ${item.iconColor}`} />
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="text-base md:text-lg font-semibold text-gray-900">
-                                                {item.title}
-                                            </h3>
-                                            <p className="text-xs md:text-sm text-gray-600 leading-relaxed line-clamp-2">
-                                                {item.description}
-                                            </p>
+                                            <h3 className="text-base md:text-lg font-semibold text-gray-900">{item.title}</h3>
+                                            <p className="text-xs md:text-sm text-gray-600 leading-relaxed line-clamp-2">{item.description}</p>
                                         </div>
                                     </div>
                                 </Link>
@@ -141,12 +137,8 @@ export default function HomeMenu() {
                                             <IconComponent className={`w-6 h-6 md:w-7 md:h-7 ${item.iconColor}`} />
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="text-base md:text-lg font-semibold text-gray-900">
-                                                {item.title}
-                                            </h3>
-                                            <p className="text-xs md:text-sm text-gray-600 leading-relaxed line-clamp-2">
-                                                {item.description}
-                                            </p>
+                                            <h3 className="text-base md:text-lg font-semibold text-gray-900">{item.title}</h3>
+                                            <p className="text-xs md:text-sm text-gray-600 leading-relaxed line-clamp-2">{item.description}</p>
                                         </div>
                                     </div>
                                 </Link>
@@ -156,7 +148,27 @@ export default function HomeMenu() {
                 </div>
 
                 {/* Right Side - Calendar Widget */}
-                <div className="lg:w-[400px]">
+                {/* Added space-y-4 to separate the new card and the calendar */}
+                <div className="lg:w-[400px] flex flex-col gap-4">
+                    {/* NEW: E-Boss Ecosystem Banner */}
+                    <Link href="#" className="block group">
+                        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden transition-transform hover:scale-[1.02]">
+                            {/* Decorative background circle */}
+                            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl group-hover:opacity-20 transition-opacity"></div>
+
+                            <div className="relative z-10 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold mb-1">eBoss Ecosystem</h3>
+                                    <p className="text-indigo-100 text-sm">Explore our connected services</p>
+                                </div>
+                                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                                    <ExternalLink className="w-5 h-5 text-white" />
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+
+                    {/* Existing Calendar */}
                     <Calendar />
                 </div>
             </div>
